@@ -8,7 +8,7 @@
 </head>
 <body>
     <main class="container">
-        <h1>BolsilloUruguay</h1>
+        <h1 id="mainTitle">BolsilloUruguay</h1>
         <p class="subtitle">Asesor de Ahorro y Soluciones</p>
         
         <!-- Botón de aceptación manual de ubicación local y del dispositivo -->
@@ -21,13 +21,14 @@
             <input type="text" id="userInput" placeholder="Ej: ¿Dónde comprar más barato o hacer un trámite?" autocomplete="off">
             
             <!-- Botón de Micrófono: Mantener presionado para hablar, soltar para enviar -->
-            <button id="micBtn" class="mic-btn" onmousedown="iniciarEscucha()" onmouseup="detenerEscucha()" onttouchstart="iniciarEscucha()" ontouchend="detenerEscucha()">
+            <button id="micBtn" class="mic-btn" onmousedown="iniciarEscucha()" onmouseup="detenerEscucha()" ontouchstart="iniciarEscucha()" ontouchend="detenerEscucha()">
                 🎙️ Mantén presionado para hablar
             </button>
 
             <button onclick="enviarConsulta()">Consultar</button>
         </div>
 
+        <!-- Pantalla despejada: Muestra una sola respuesta a la vez y se limpia al usar de nuevo -->
         <div id="resultado" class="result-box" style="display: none;">
             <p id="textoRespuesta"></p>
             <button id="whatsappBtn" class="wa-btn" onclick="compartirWhatsApp()">Compartir por WhatsApp</button>
@@ -87,6 +88,9 @@
         function iniciarEscucha() {
             if (recognition) {
                 try {
+                    // Limpia la pantalla y el campo de texto antes de una nueva entrada por voz
+                    document.getElementById("userInput").value = "";
+                    document.getElementById("resultado").style.display = "none";
                     document.getElementById("micBtn").innerText = "🔴 Escuchando... (suelta al terminar)";
                     recognition.start();
                 } catch(e) {}
@@ -103,8 +107,13 @@
         }
 
         async function enviarConsulta() {
-            const mensaje = document.getElementById("userInput").value;
+            const inputField = document.getElementById("userInput");
+            const mensaje = inputField.value;
             if (!mensaje.trim()) return;
+
+            // Limpia el cuadro de resultado anterior de forma inmediata para mantener la pantalla despejada
+            document.getElementById("resultado").style.display = "none";
+            document.getElementById("textoRespuesta").innerText = "";
 
             const response = await fetch("/consultar", {
                 method: "POST",
@@ -113,8 +122,11 @@
             });
 
             const data = await response.json();
+            
+            // Muestra únicamente la nueva respuesta y limpia el input para la siguiente consulta
             document.getElementById("textoRespuesta").innerText = data.respuesta;
             document.getElementById("resultado").style.display = "block";
+            inputField.value = ""; 
         }
 
         function compartirWhatsApp() {
