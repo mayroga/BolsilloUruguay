@@ -11,7 +11,13 @@
         <h1>BolsilloUruguay</h1>
         <p class="subtitle">Asesor de Ahorro y Soluciones</p>
         
-        <div class="search-box">
+        <!-- Botón de aceptación manual de ubicación local y del dispositivo -->
+        <div id="permisoBox" class="permiso-box">
+            <p>Para mostrarte opciones cercanas exactas, presiona aceptar.</p>
+            <button onclick="activarGPS()">Aceptar</button>
+        </div>
+
+        <div class="search-box" id="searchBox" style="display:none;">
             <input type="text" id="userInput" placeholder="Ej: ¿Dónde comprar más barato o hacer un trámite?" autocomplete="off">
             <button onclick="enviarConsulta()">Consultar</button>
         </div>
@@ -23,6 +29,30 @@
     </main>
 
     <script>
+        let userLat = null;
+        let userLon = null;
+
+        function activarGPS() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLat = position.coords.latitude;
+                        userLon = position.coords.longitude;
+                        document.getElementById("permisoBox").style.display = "none";
+                        document.getElementById("searchBox").style.display = "flex";
+                    },
+                    (error) => {
+                        // Aunque falle o rechace, se abre la app sin bloquear al usuario
+                        document.getElementById("permisoBox").style.display = "none";
+                        document.getElementById("searchBox").style.display = "flex";
+                    }
+                );
+            } else {
+                document.getElementById("permisoBox").style.display = "none";
+                document.getElementById("searchBox").style.display = "flex";
+            }
+        }
+
         async function enviarConsulta() {
             const mensaje = document.getElementById("userInput").value;
             if (!mensaje.trim()) return;
@@ -30,7 +60,7 @@
             const response = await fetch("/consultar", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mensaje })
+                body: JSON.stringify({ mensaje, lat: userLat, lon: userLon })
             });
 
             const data = await response.json();
