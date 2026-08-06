@@ -58,9 +58,15 @@ def consultar():
 
     ubicacion_txt = f" (Zona: {lat}, {lon})" if lat and lon else ""
 
-    # Blindaje legal estricto: Cero afirmaciones absolutas sobre salarios, cobros o leyes para evitar demandas o multas
+    # Bloques integrados con gancho letal de impacto diario y blindaje legal estricto
     if any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "ley laboral", "ministerio de trabajo"]):
         respuesta = f"Orientación general sobre gestiones{ubicacion_txt}: Se sugiere verificar los recibos de sueldo y consultar directamente los canales formales del MTSS o BPS para confirmar cálculos y normativas vigentes de forma segura."
+    elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion", "peso"]):
+        respuesta = f"Pulso cambiario{ubicacion_txt}: Se sugiere consultar las cotizaciones oficiales de pizarra del BROU o redes de cobranza antes de realizar operaciones de cambio para asegurar el mejor valor del día."
+    elif any(p in consulta for p in ["nafta", "combustible", "gasoil", "ancap", "boleto"]):
+        respuesta = f"Movilidad y energía{ubicacion_txt}: Se sugiere verificar los precios vigentes en estaciones oficiales y planificar cargas o recargas con anticipación para optimizar el presupuesto mensual de traslado."
+    elif any(p in consulta for p in ["luz", "ute", "agua", "ose", "antel", "factura", "cuenta"]):
+        respuesta = f"Gestión de servicios{ubicacion_txt}: Se sugiere revisar los vencimientos y canales digitales de pago habilitados para evitar recargos por mora en las tarifas públicas."
     elif any(p in consulta for p in ["super", "precio", "comida", "carne", "pan", "feria", "comprar"]):
         respuesta = f"Ahorro sugerido{ubicacion_txt}: Se sugiere comparar ferias vecinales y comercios locales de cercanía. Comprar en días de descuento con redes de cobranza o tarjetas habituales reduce el gasto diario sin riesgos."
     elif any(p in consulta for p in ["tramite", "cedula", "bps", "intendencia", "pasaporte", "documento"]):
