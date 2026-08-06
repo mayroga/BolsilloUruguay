@@ -11,7 +11,6 @@ STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID")
 DEV_USER = os.environ.get("DEV_USER", "admin")
 DEV_PASS = os.environ.get("DEV_PASS", "secreto123")
 
-# Variedad dinámica de saludos y aperturas para evitar monotonía (sin horas fijas)
 SALUDOS_INICIALES = [
     "¿Qué necesidad resolvemos hoy?",
     "¿En qué te puedo orientar en este momento?",
@@ -25,7 +24,6 @@ SALUDOS_INICIALES = [
 @app.route("/")
 def index():
     if session.get("is_dev") or session.get("pagado"):
-        # Selecciona un saludo dinámico distinto cada vez que se abre o recarga la app
         saludo_actual = random.choice(SALUDOS_INICIALES)
         return render_template("app.html", saludo_dinamico=saludo_actual)
     return render_template("paywall.html")
@@ -68,28 +66,32 @@ def consultar():
     lon = data.get("lon")
 
     if not consulta:
-        return jsonify({"respuesta": "Escribe o di qué necesitas resolver hoy para darte la guía exacta."})
+        return jsonify({"respuesta": "Escribe o di qué necesitas resolver hoy."})
 
-    ubicacion_txt = f" (Zona: {lat}, {lon})" if lat and lon else ""
-
-    if any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "ley laboral", "ministerio de trabajo"]):
-        respuesta = f"Orientación general sobre gestiones{ubicacion_txt}: Se sugiere verificar los recibos de sueldo y consultar directamente los canales formales del MTSS o BPS para confirmar cálculos y normativas vigentes de forma segura."
-    elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion", "peso"]):
-        respuesta = f"Pulso cambiario{ubicacion_txt}: Se sugiere consultar las cotizaciones oficiales de pizarra del BROU o redes de cobranza antes de realizar operaciones de cambio para asegurar el mejor valor del día."
-    elif any(p in consulta for p in ["nafta", "combustible", "gasoil", "ancap", "boleto"]):
-        respuesta = f"Movilidad y energía{ubicacion_txt}: Se sugiere verificar los precios vigentes en estaciones oficiales y planificar cargas o recargas con anticipación para optimizar el presupuesto mensual de traslado."
-    elif any(p in consulta for p in ["luz", "ute", "agua", "ose", "antel", "factura", "cuenta"]):
-        respuesta = f"Gestión de servicios{ubicacion_txt}: Se sugiere revisar los vencimientos y canales digitales de pago habilitados para evitar recargos por mora en las tarifas públicas."
-    elif any(p in consulta for p in ["super", "precio", "comida", "carne", "pan", "feria", "comprar"]):
-        respuesta = f"Ahorro sugerido{ubicacion_txt}: Se sugiere comparar ferias vecinales y comercios locales de cercanía. Comprar en días de descuento con redes de cobranza o tarjetas habituales reduce el gasto diario sin riesgos."
-    elif any(p in consulta for p in ["tramite", "cedula", "bps", "intendencia", "pasaporte", "documento"]):
-        respuesta = f"Gestión sugerida{ubicacion_txt}: Se sugiere verificar los requisitos mínimos en la web oficial correspondiente y agendarse previamente para evitar filas o traslados innecesarios."
-    elif any(p in consulta for p in ["bondi", "transporte", "fletero", "viaje", "omnibus", "combi"]):
-        respuesta = f"Movilidad sugerida{ubicacion_txt}: Se sugiere consultar líneas locales o combinar horarios vecinales para optimizar el costo del traslado diario."
+    query_url = consulta.replace(" ", "+")
+    
+    # Respuestas enfocadas 100% en la esencia, claras, sin rodeos, con su botón opcional al final
+    if any(p in consulta for p in ["cafe", "café", "llave", "latino", "expreso"]):
+        respuesta = "El Café La Llave se consigue al mejor precio en cadenas de supermercados grandes (como Ta-Ta, Devoto, Disco, Geant) o en importadores directos por mayor. Revisa las ofertas semanales de stock en línea."
+        boton = {"texto": "🌐 Ver disponibilidad y precios exactos", "url": "https://www.tata.com.uy/catalogue?query=cafe%20la%20llave"}
+        
+    elif any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo"]):
+        respuesta = "Tus liquidaciones, cálculos de haberes y reclamos formales se gestionan directamente a través del Ministerio de Trabajo (MTSS) o tu historial en el BPS."
+        boton = {"texto": "🌐 Ir al portal oficial del MTSS", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"}
+        
+    elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion"]):
+        respuesta = "La cotización oficial de referencia en plaza para compra y venta la fija el Banco República (BROU) y la red de cambios."
+        boton = {"texto": "🌐 Ver pizarra actual del BROU", "url": "https://www.brou.com.uy/cotizaciones"}
+        
+    elif any(p in consulta for p in ["nafta", "combustible", "gasoil"]):
+        respuesta = "Los precios de los combustibles son regulados y únicos a nivel nacional en todas las estaciones de servicio ANCAP."
+        boton = {"texto": "🌐 Ver estaciones cercanas en Mapa", "url": f"https://www.google.com/maps/search/estaciones+ancap/@{lat or -34.9011},{lon or -56.1645},13z"}
+    
     else:
-        respuesta = f"Orientación general{ubicacion_txt}: Se sugiere verificar los canales directos y formales de la localidad para resolver esta necesidad de forma segura y económica."
+        respuesta = f"Para resolver tu búsqueda sobre '{consulta}', la opción más directa y efectiva es revisar los puntos de comercio o prestadores especializados en la zona."
+        boton = {"texto": "🌐 Buscar ubicación y sitios exactos", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
 
-    return jsonify({"respuesta": respuesta})
+    return jsonify({"respuesta": respuesta, "boton": boton})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
