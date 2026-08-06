@@ -9,19 +9,16 @@
 <body>
     <main class="container">
         <h1 id="mainTitle">BolsilloUruguay</h1>
-        <!-- Saludo dinámico y variable inyectado desde Python sin horas fijas ni monotonía -->
         <p class="subtitle">{{ saludo_dinamico }}</p>
         
-        <!-- Botón de aceptación manual de ubicación local y del dispositivo -->
         <div id="permisoBox" class="permiso-box">
-            <p>Para mostrarte opciones cercanas exactas, presiona aceptar.</p>
+            <p>Activa la ubicación para darte accesos cercanos exactos.</p>
             <button onclick="activarGPS()">Aceptar</button>
         </div>
 
         <div class="search-box" id="searchBox" style="display:none;">
-            <input type="text" id="userInput" placeholder="Ej: ¿Dónde comprar más barato o hacer un trámite?" autocomplete="off">
+            <input type="text" id="userInput" placeholder="Ej: Café La Llave, nafta, sueldo..." autocomplete="off">
             
-            <!-- Botón de Micrófono: Mantener presionado para hablar, soltar para enviar -->
             <button id="micBtn" class="mic-btn" onmousedown="iniciarEscucha()" onmouseup="detenerEscucha()" ontouchstart="iniciarEscucha()" ontouchend="detenerEscucha()">
                 🎙️ Mantén presionado para hablar
             </button>
@@ -29,9 +26,14 @@
             <button onclick="enviarConsulta()">Consultar</button>
         </div>
 
-        <!-- Pantalla despejada: Muestra una sola respuesta a la vez y se limpia al usar de nuevo -->
+        <!-- Bloque de respuesta esencial + Botón opcional -->
         <div id="resultado" class="result-box" style="display: none;">
-            <p id="textoRespuesta"></p>
+            <div class="result-scroll">
+                <p id="textoRespuesta"></p>
+                <!-- Botón opcional dinámico de redirección -->
+                <div id="linkContainer"></div>
+            </div>
+            <button id="leerVozBtn" class="voice-read-btn" onclick="leerRespuestaEnVozAlta()">🔊 Escuchar respuesta</button>
             <button id="whatsappBtn" class="wa-btn" onclick="compartirWhatsApp()">Compartir por WhatsApp</button>
         </div>
     </main>
@@ -44,24 +46,16 @@
         function activarGPS() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        userLat = position.coords.latitude;
-                        userLon = position.coords.longitude;
-                        document.getElementById("permisoBox").style.display = "none";
-                        document.getElementById("searchBox").style.display = "flex";
-                        inicializarVoz();
-                    },
-                    (error) => {
-                        document.getElementById("permisoBox").style.display = "none";
-                        document.getElementById("searchBox").style.display = "flex";
-                        inicializarVoz();
-                    }
+                    (pos) => { userLat = pos.coords.latitude; userLon = pos.coords.longitude; finalizarGPS(); },
+                    (err) => { finalizarGPS(); }
                 );
-            } else {
-                document.getElementById("permisoBox").style.display = "none";
-                document.getElementById("searchBox").style.display = "flex";
-                inicializarVoz();
-            }
+            } else { finalizarGPS(); }
+        }
+
+        function finalizarGPS() {
+            document.getElementById("permisoBox").style.display = "none";
+            document.getElementById("searchBox").style.display = "flex";
+            inicializarVoz();
         }
 
         function inicializarVoz() {
@@ -69,17 +63,9 @@
             if (SpeechRecognition) {
                 recognition = new SpeechRecognition();
                 recognition.lang = 'es-UY';
-                recognition.interimResults = false;
-                recognition.maxAlternatives = 1;
-
-                recognition.onresult = (event) => {
-                    const speechToText = event.results[0][0].transcript;
-                    document.getElementById("userInput").value = speechToText;
+                recognition.onresult = (e) => {
+                    document.getElementById("userInput").value = e.results[0][0].transcript;
                     enviarConsulta();
-                };
-
-                recognition.onerror = (event) => {
-                    document.getElementById("micBtn").innerText = "🎙️ Mantén presionado para hablar";
                 };
             } else {
                 document.getElementById("micBtn").style.display = "none";
@@ -89,10 +75,9 @@
         function iniciarEscucha() {
             if (recognition) {
                 try {
-                    // Limpia la pantalla y el campo de texto antes de una nueva entrada por voz
                     document.getElementById("userInput").value = "";
                     document.getElementById("resultado").style.display = "none";
-                    document.getElementById("micBtn").innerText = "🔴 Escuchando... (suelta al terminar)";
+                    document.getElementById("micBtn").innerText = "🔴 Escuchando...";
                     recognition.start();
                 } catch(e) {}
             }
@@ -112,9 +97,9 @@
             const mensaje = inputField.value;
             if (!mensaje.trim()) return;
 
-            // Limpia el cuadro de resultado anterior de forma inmediata para mantener la pantalla despejada
             document.getElementById("resultado").style.display = "none";
             document.getElementById("textoRespuesta").innerText = "";
+            document.getElementById("linkContainer").innerHTML = "";
 
             const response = await fetch("/consultar", {
                 method: "POST",
@@ -124,16 +109,38 @@
 
             const data = await response.json();
             
-            // Muestra únicamente la nueva respuesta y limpia el input para la siguiente consulta
+            // Pone la esencia exacta de la respuesta
             document.getElementById("textoRespuesta").innerText = data.respuesta;
+
+            // Inserta el botón opcional de redirección directa
+            if (data.boton) {
+                const linkContainer = document.getElementById("linkContainer");
+                const btn = document.createElement("a");
+                btn.href = data.boton.url;
+                btn.target = "_blank";
+                btn.className = "direct-link-btn";
+                btn.innerText = data.boton.texto;
+                linkContainer.appendChild(btn);
+            }
+
             document.getElementById("resultado").style.display = "block";
             inputField.value = ""; 
+            leerRespuestaEnVozAlta();
+        }
+
+        function leerRespuestaEnVozAlta() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const texto = document.getElementById("textoRespuesta").innerText;
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'es-UY';
+                window.speechSynthesis.speak(utterance);
+            }
         }
 
         function compartirWhatsApp() {
             const texto = document.getElementById("textoRespuesta").innerText;
-            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent("Mirá este dato útil: " + texto)}`;
-            window.open(url, "_blank");
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, "_blank");
         }
     </script>
 </body>
