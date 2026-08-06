@@ -54,12 +54,14 @@ def consultar():
     lon = data.get("lon")
 
     if not consulta:
-        return jsonify({"respuesta": "Escribe qué necesitas resolver hoy para darte la guía exacta."})
+        return jsonify({"respuesta": "Escribe o di qué necesitas resolver hoy para darte la guía exacta."})
 
-    # Procesamiento local directo y de costo cero en tokens, integrando GPS del dispositivo de forma transparente
-    ubicacion_txt = f" (Ubicación GPS detectada: {lat}, {lon})" if lat and lon else ""
+    ubicacion_txt = f" (Zona: {lat}, {lon})" if lat and lon else ""
 
-    if any(p in consulta for p in ["super", "precio", "comida", "carne", "pan", "feria", "comprar"]):
+    # Blindaje legal estricto: Cero afirmaciones absolutas sobre salarios, cobros o leyes para evitar demandas o multas
+    if any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "ley laboral", "ministerio de trabajo"]):
+        respuesta = f"Orientación general sobre gestiones{ubicacion_txt}: Se sugiere verificar los recibos de sueldo y consultar directamente los canales formales del MTSS o BPS para confirmar cálculos y normativas vigentes de forma segura."
+    elif any(p in consulta for p in ["super", "precio", "comida", "carne", "pan", "feria", "comprar"]):
         respuesta = f"Ahorro sugerido{ubicacion_txt}: Se sugiere comparar ferias vecinales y comercios locales de cercanía. Comprar en días de descuento con redes de cobranza o tarjetas habituales reduce el gasto diario sin riesgos."
     elif any(p in consulta for p in ["tramite", "cedula", "bps", "intendencia", "pasaporte", "documento"]):
         respuesta = f"Gestión sugerida{ubicacion_txt}: Se sugiere verificar los requisitos mínimos en la web oficial correspondiente y agendarse previamente para evitar filas o traslados innecesarios."
