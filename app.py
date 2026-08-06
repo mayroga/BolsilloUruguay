@@ -1,4 +1,5 @@
 import os
+import random
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import stripe
 
@@ -10,10 +11,23 @@ STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID")
 DEV_USER = os.environ.get("DEV_USER", "admin")
 DEV_PASS = os.environ.get("DEV_PASS", "secreto123")
 
+# Variedad dinámica de saludos y aperturas para evitar monotonía (sin horas fijas)
+SALUDOS_INICIALES = [
+    "¿Qué necesidad resolvemos hoy?",
+    "¿En qué te puedo orientar en este momento?",
+    "Cuéntame, ¿qué andas buscando resolver?",
+    "¿Qué dato o solución precisas ahora?",
+    "Adelante, ¿en qué te ayudamos hoy?",
+    "¿Qué gestión o ahorro revisamos?",
+    "Escucho tu consulta, ¿qué necesitas?"
+]
+
 @app.route("/")
 def index():
     if session.get("is_dev") or session.get("pagado"):
-        return render_template("app.html")
+        # Selecciona un saludo dinámico distinto cada vez que se abre o recarga la app
+        saludo_actual = random.choice(SALUDOS_INICIALES)
+        return render_template("app.html", saludo_dinamico=saludo_actual)
     return render_template("paywall.html")
 
 @app.route("/crear-checkout", methods=["POST"])
@@ -58,7 +72,6 @@ def consultar():
 
     ubicacion_txt = f" (Zona: {lat}, {lon})" if lat and lon else ""
 
-    # Bloques integrados con gancho letal de impacto diario y blindaje legal estricto
     if any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "ley laboral", "ministerio de trabajo"]):
         respuesta = f"Orientación general sobre gestiones{ubicacion_txt}: Se sugiere verificar los recibos de sueldo y consultar directamente los canales formales del MTSS o BPS para confirmar cálculos y normativas vigentes de forma segura."
     elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion", "peso"]):
