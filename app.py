@@ -1,5 +1,6 @@
 import os
 import random
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import stripe
 
@@ -11,6 +12,9 @@ STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID")
 DEV_USER = os.environ.get("DEV_USER", "admin")
 DEV_PASS = os.environ.get("DEV_PASS", "secreto123")
 
+# Tu URL fija oficial en Render
+URL_BASE_OFICIAL = "https://bolsillouruguay.onrender.com"
+
 SALUDOS_INICIALES = [
     "¿Qué necesidad resolvemos hoy?",
     "¿En qué te puedo orientar en este momento?",
@@ -21,11 +25,24 @@ SALUDOS_INICIALES = [
     "Escucho tu consulta, ¿qué necesitas?"
 ]
 
+def verificar_acceso_pagado():
+    """Verifica si el usuario es desarrollador o si su pago de 10 días sigue vigente."""
+    if session.get("is_dev"):
+        return True
+    
+    # Comprobar si tiene fecha de expiración y si aún no ha vencido
+    expiracion = session.get("expiracion_pago")
+    if expiracion:
+        # Convertir texto guardado en fecha y comparar con el momento actual
+        if datetime.utcnow() < datetime.fromisoformat(expiracion):
+            return True
+            
+    return False
+
 @app.route("/")
 def index():
-    if session.get("is_dev") or session.get("pagado"):
+    if verificar_acceso_pagado():
         saludo_actual = random.choice(SALUDOS_INICIALES)
-        # Inicializamos el historial de chat en la sesión si no existe
         if "historial" not in session:
             session["historial"] = []
         return render_template("app.html", saludo_dinamico=saludo_actual)
@@ -34,12 +51,13 @@ def index():
 @app.route("/crear-checkout", methods=["POST"])
 def crear_checkout():
     try:
+        # Forzamos las URLs de retorno usando tu dominio exacto de Render para evitar fallos
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
             mode="payment",
-            success_url=request.host_url + "exito",
-            cancel_url=request.host_url,
+            success_url=f"{URL_BASE_OFICIAL}/exito",
+            cancel_url=URL_BASE_OFICIAL,
         )
         return jsonify({"url": checkout_session.url})
     except Exception as e:
@@ -47,14 +65,16 @@ def crear_checkout():
 
 @app.route("/exito")
 def exito():
-    session["pagado"] = True
+    # Al pagarse con éxito, otorgamos el acceso exacto por 10 días a partir de este segundo
+    tiempo_expiracion = datetime.utcnow() + timedelta(days=10)
+    session["expiracion_pago"] = tiempo_expiracion.isoformat()
     session["historial"] = []
-    return redirect(url_for("index"))
+    return redirect(URL_BASE_OFICIAL)
 
 @app.route("/login-dev", methods=["POST"])
 def login_dev():
     data = request.get_json()
-    if data.get("usuario") == DEV_USER and data.get("clave") == DEV_PASS:
+    if data.get("usuario"] == DEV_USER and data.get("clave"] == DEV_PASS:
         session["is_dev"] = True
         session["historial"] = []
         return jsonify({"success": True})
@@ -62,8 +82,8 @@ def login_dev():
 
 @app.route("/consultar", methods=["POST"])
 def consultar():
-    if not session.get("is_dev") and not session.get("pagado"):
-        return jsonify({"respuesta": "Acceso restringido."}), 403
+    if not verificar_acceso_pagado():
+        return jsonify({"respuesta": "El tiempo de su acceso ha expirado. Por favor, renueve su plan de asesoría."}), 403
 
     data = request.get_json()
     consulta = data.get("mensaje", "").lower().strip()
@@ -73,12 +93,9 @@ def consultar():
     if not consulta:
         return jsonify({"respuesta": "Escribe o di qué necesidad de ahorro o trámite necesitas resolver hoy."})
 
-    # Recuperar o inicializar el historial de conversación en la sesión
     historial = session.get("historial", [])
-
     query_url = consulta.replace(" ", "+")
     
-    # Palabras clave permitidas dentro del alcance de la aplicación
     palabras_clave_validas = [
         "sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley",
         "comprar", "precio", "donde", "barato", "carne", "cafe", "supermercado", "feria", "alimento", "gas",
@@ -87,10 +104,7 @@ def consultar():
         "clinica", "salud", "medico", "abogado", "contrato", "dolar", "cambio", "cotizacion"
     ]
 
-    # Revisar si la consulta actual o el contexto previo es válido
     es_valida = any(palabra in consulta for palabra in palabras_clave_validas)
-
-    # Si hay historial previo y el usuario hace una pregunta de seguimiento ("¿Y cuánto sale?", "¿Y dónde queda?"), permitimos continuar el hilo
     if not es_valida and len(historial) > 0 and any(p in consulta for p in ["cuanto", "donde", "cual", "como", "y ", "ese", "esta", "ahi"]):
         es_valida = True
 
@@ -101,7 +115,6 @@ def consultar():
         )
         botones = []
     else:
-        # Analizamos el tipo de respuesta experta según la consulta
         if any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley"]):
             respuesta = (
                 f"Para resolver tu situación sobre '{consulta}' de forma efectiva y sin gastar en abogados:\n\n"
@@ -183,10 +196,9 @@ def consultar():
                 {"texto": "🌐 Buscar soluciones y sitios exactos en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
             ]
 
-    # Guardar en el historial de sesión (limitado estrictamente a los últimos 10 turnos / 20 mensajes)
     historial.append({"usuario": consulta, "asesor": respuesta})
     if len(historial) > 10:
-        historial.pop(0)  # Elimina el más antiguo para mantener exactamente las últimas 10 interacciones con hilo
+        historial.pop(0)
     session["historial"] = historial
 
     return jsonify({"respuesta": respuesta, "botones": botones})
