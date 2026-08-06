@@ -3,10 +3,10 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import stripe
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "clave-secreta-temporal")
+app.secret_key = os.environ.get("SECRET_KEY", "clave-secreta-uruguay")
 
-# Configuración de Stripe (Credenciales seguras desde las variables de entorno de Render)
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID")
 DEV_USER = os.environ.get("DEV_USER", "admin")
 DEV_PASS = os.environ.get("DEV_PASS", "secreto123")
 
@@ -21,14 +21,7 @@ def crear_checkout():
     try:
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {"name": "BolsilloUruguay - Acceso Ilimitado"},
-                    "unit_amount": 299, # $2.99 USD
-                },
-                "quantity": 1,
-            }],
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
             mode="payment",
             success_url=request.host_url + "exito",
             cancel_url=request.host_url,
@@ -53,21 +46,27 @@ def login_dev():
 @app.route("/consultar", methods=["POST"])
 def consultar():
     if not session.get("is_dev") and not session.get("pagado"):
-        return jsonify({"respuesta": "Acceso restringido. Debe realizar el pago correspondiente."}), 403
+        return jsonify({"respuesta": "Acceso restringido."}), 403
 
     data = request.get_json()
     consulta = data.get("mensaje", "").lower().strip()
-    
+    lat = data.get("lat")
+    lon = data.get("lon")
+
     if not consulta:
-        respuesta = "Por favor, escribe o di qué necesitas resolver hoy para darte una guía exacta."
-    elif "super" in consulta or "comida" in consulta or "precio" in consulta or "canasta" in consulta:
-        respuesta = "Se sugiere comparar ofertas semanales en ferias vecinales y comercios de barrio. Comprar en días de descuento con tarjetas locales reduce notablemente el gasto diario."
-    elif "tramite" in consulta or "bps" in consulta or "cedula" in consulta or "intendencia" in consulta:
-        respuesta = "Para trámites estatales, se sugiere agendarse previamente de forma digital o verificar requisitos en las sedes oficiales para evitar traslados innecesarios y perder tiempo en filas."
-    elif "transporte" in consulta or "bondi" in consulta or "viaje" in consulta:
-        respuesta = "Se sugiere consultar las aplicaciones oficiales de movilidad o líneas locales para coordinar combinaciones y evitar costos extra en traslados dentro de la ciudad o hacia el interior."
+        return jsonify({"respuesta": "Escribe qué necesitas resolver hoy para darte la guía exacta."})
+
+    # Procesamiento local directo y de costo cero en tokens, integrando GPS del dispositivo de forma transparente
+    ubicacion_txt = f" (Ubicación GPS detectada: {lat}, {lon})" if lat and lon else ""
+
+    if any(p in consulta for p in ["super", "precio", "comida", "carne", "pan", "feria", "comprar"]):
+        respuesta = f"Ahorro sugerido{ubicacion_txt}: Se sugiere comparar ferias vecinales y comercios locales de cercanía. Comprar en días de descuento con redes de cobranza o tarjetas habituales reduce el gasto diario sin riesgos."
+    elif any(p in consulta for p in ["tramite", "cedula", "bps", "intendencia", "pasaporte", "documento"]):
+        respuesta = f"Gestión sugerida{ubicacion_txt}: Se sugiere verificar los requisitos mínimos en la web oficial correspondiente y agendarse previamente para evitar filas o traslados innecesarios."
+    elif any(p in consulta for p in ["bondi", "transporte", "fletero", "viaje", "omnibus", "combi"]):
+        respuesta = f"Movilidad sugerida{ubicacion_txt}: Se sugiere consultar líneas locales o combinar horarios vecinales para optimizar el costo del traslado diario."
     else:
-        respuesta = "Orientación general: Se sugiere verificar siempre los canales oficiales o locales correspondientes para resolver esta consulta de forma segura y sin gastos de más."
+        respuesta = f"Orientación general{ubicacion_txt}: Se sugiere verificar los canales directos y formales de la localidad para resolver esta necesidad de forma segura y económica."
 
     return jsonify({"respuesta": respuesta})
 
