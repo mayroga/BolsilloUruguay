@@ -12,12 +12,12 @@
         <p class="subtitle">{{ saludo_dinamico }}</p>
         
         <div id="permisoBox" class="permiso-box">
-            <p>Activa la ubicación para darte accesos cercanos exactos.</p>
+            <p>Activa la ubicación para calcular opciones cercanas exactas a tu bolsillo y región.</p>
             <button onclick="activarGPS()">Aceptar</button>
         </div>
 
         <div class="search-box" id="searchBox" style="display:none;">
-            <input type="text" id="userInput" placeholder="Ej: Café La Llave, nafta, sueldo..." autocomplete="off">
+            <input type="text" id="userInput" placeholder="Ej: ¿Dónde comprar más barato o hacer un trámite?" autocomplete="off">
             
             <button id="micBtn" class="mic-btn" onmousedown="iniciarEscucha()" onmouseup="detenerEscucha()" ontouchstart="iniciarEscucha()" ontouchend="detenerEscucha()">
                 🎙️ Mantén presionado para hablar
@@ -26,12 +26,12 @@
             <button onclick="enviarConsulta()">Consultar</button>
         </div>
 
-        <!-- Bloque de respuesta esencial + Botón opcional -->
+        <!-- Pantalla de resultados inteligente y completa -->
         <div id="resultado" class="result-box" style="display: none;">
             <div class="result-scroll">
-                <p id="textoRespuesta"></p>
-                <!-- Botón opcional dinámico de redirección -->
-                <div id="linkContainer"></div>
+                <p id="textoRespuesta" style="white-space: pre-line;"></p>
+                <!-- Contenedor para múltiples botones de opciones y mapas -->
+                <div id="linksContainer" class="links-container"></div>
             </div>
             <button id="leerVozBtn" class="voice-read-btn" onclick="leerRespuestaEnVozAlta()">🔊 Escuchar respuesta</button>
             <button id="whatsappBtn" class="wa-btn" onclick="compartirWhatsApp()">Compartir por WhatsApp</button>
@@ -99,7 +99,7 @@
 
             document.getElementById("resultado").style.display = "none";
             document.getElementById("textoRespuesta").innerText = "";
-            document.getElementById("linkContainer").innerHTML = "";
+            document.getElementById("linksContainer").innerHTML = "";
 
             const response = await fetch("/consultar", {
                 method: "POST",
@@ -109,18 +109,20 @@
 
             const data = await response.json();
             
-            // Pone la esencia exacta de la respuesta
+            // Muestra la respuesta completa estructurada paso a paso
             document.getElementById("textoRespuesta").innerText = data.respuesta;
 
-            // Inserta el botón opcional de redirección directa
-            if (data.boton) {
-                const linkContainer = document.getElementById("linkContainer");
-                const btn = document.createElement("a");
-                btn.href = data.boton.url;
-                btn.target = "_blank";
-                btn.className = "direct-link-btn";
-                btn.innerText = data.boton.texto;
-                linkContainer.appendChild(btn);
+            // Inserta todos los botones de opciones y mapas correspondientes
+            if (data.botones && data.botones.length > 0) {
+                const linksContainer = document.getElementById("linksContainer");
+                data.botones.forEach(btnInfo => {
+                    const btn = document.createElement("a");
+                    btn.href = btnInfo.url;
+                    btn.target = "_blank";
+                    btn.className = "direct-link-btn";
+                    btn.innerText = btnInfo.texto;
+                    linksContainer.appendChild(btn);
+                });
             }
 
             document.getElementById("resultado").style.display = "block";
@@ -140,7 +142,7 @@
 
         function compartirWhatsApp() {
             const texto = document.getElementById("textoRespuesta").innerText;
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, "_blank");
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent("Mira este dato útil y opciones de ahorro:\n\n" + texto)}`, "_blank");
         }
     </script>
 </body>
