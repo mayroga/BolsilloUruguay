@@ -66,69 +66,74 @@ def consultar():
     lon = data.get("lon")
 
     if not consulta:
-        return jsonify({"respuesta": "Escribe o di qué necesitas resolver hoy."})
+        return jsonify({"respuesta": "Escribe o di qué necesidad de ahorro o trámite necesitas resolver hoy."})
 
     query_url = consulta.replace(" ", "+")
     
-    # El servidor procesa internamente el análisis de ahorro, opciones, costos de traslado y pasos exactos.
-    if any(p in consulta for p in ["cafe", "café", "llave", "latino", "expreso"]):
+    # Palabras clave permitidas dentro del alcance de la aplicación (Economía, compras, laboral, transporte, trámites)
+    palabras_clave_validas = [
+        "sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley",
+        "comprar", "precio", "donde", "barato", "carne", "cafe", "supermercado", "feria", "alimento", "gas",
+        "transporte", "bondi", "bus", "pasaje", "viaje", "boleto", "nafta", "combustible", "auto",
+        "tramite", "banco", "brou", "bps", "mtss", "comercio", "ahorro", "gasto", "mercado", "negocio"
+    ]
+
+    # Filtro de alcance estricto: Si la consulta no tiene relación con el servicio, se limita a explicar su propósito
+    es_valida = any(palabra in consulta for palabra in palabras_clave_validas)
+
+    if not es_valida:
         respuesta = (
-            "• Opción más económica (Mayorista o Feria): Buscar en ferias vecinales o distribuidores directos (ahorro de hasta un 30%).\n"
-            "• Opción comercial segura: Cadenas de descuento (Ta-Ta o reposiciones en supermercados aprovechando días de tarjeta bonificada).\n"
-            "💡 Qué hacer: Revisa el folleto digital antes de trasladarte para evaluar si el costo de transporte justifica el viaje.\n"
-            "⚙️ Por qué: Evita pagar de más por presentaciones pequeñas en comercios de cercanía."
+            "Esta aplicación está especializada exclusivamente en asesoría de ahorro, compras inteligentes, movilidad, trámites laborales y soluciones económicas en plaza.\n\n"
+            "Por favor, realiza una consulta orientada a resolver un problema de tu economía, gestiones de trabajo, costos de productos o transporte para brindarte la solución exacta."
+        )
+        botones = []
+
+    elif any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley"]):
+        respuesta = (
+            f"Para resolver tu situación sobre '{consulta}' de forma efectiva y sin gastar en abogados:\n\n"
+            "1. **Auditoría interna de tu caso:** Verifica tus recibos de sueldo y tu historia laboral digital en el BPS para contrastar los números reales frente a lo que te corresponde por ley.\n"
+            "2. **Cálculo y base legal:** Si se trata de haberes impagos o cálculos de liquidación (como aguinaldo o salario vacacional), recuerda que se estructuran sobre los promedios y días trabajados exactos.\n"
+            "3. **Paso a seguir:** Presenta un reclamo formal y por escrito ante la administración de la empresa exigiendo el desglose.\n"
+            "4. **Defensa gratuita:** Si no hay respuesta favorable, agenda una audiencia de conciliación en el Ministerio de Trabajo (MTSS), donde un inspector interviene sin costo para hacer valer tus derechos."
         )
         botones = [
-            {"texto": "🌐 Ver precios mayoristas y ferias en Mapa", "url": f"https://www.google.com/maps/search/mayoristas+ferias+cercanos/@{lat or -34.9011},{lon or -56.1645},14z"},
-            {"texto": "🌐 Ver ofertas en Supermercados Ta-Ta", "url": "https://www.tata.com.uy/catalogue?query=cafe%20la%20llave"}
+            {"texto": "🌐 Consultar BPS", "url": "https://www.bps.gub.uy/"},
+            {"texto": "🌐 Agendar en MTSS", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"}
         ]
-        
-    elif any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo"]):
+
+    elif any(p in consulta for p in ["comprar", "precio", "donde", "barato", "carne", "cafe", "supermercado", "feria", "alimento", "gas"]):
         respuesta = (
-            "• Opción digital inmediata: Ingresa a tu cuenta de BPS o a la web del Ministerio de Trabajo (MTSS) para verificar aportes y liquidaciones legales.\n"
-            "• Opción presencial guiada: Acércate a la oficina territorial si requieres asistencia directa con tus recibos de los últimos 6 meses.\n"
-            "💡 Qué hacer: Ten a mano tu cédula de identidad para auditar que el cálculo de aguinaldo o salario vacacional sea exacto.\n"
-            "⚙️ Por qué: Previene diferencias salariales no reclamadas y asegura el cumplimiento normativo."
+            f"Estrategia de ahorro y compra inteligente para '{consulta}':\n\n"
+            "1. **Opción más económica (Mayorista / Feria / Productor):** Compara siempre en ferias vecinales o distribuidores de plaza para evitar el sobreprecio de los comercios de cercanía.\n"
+            "2. **Opción comercial de apoyo:** Cadenas de descuento o supermercados medianos aprovechando promociones con tarjetas asociadas o días de rebaja en stock.\n"
+            "3. **Análisis de traslado:** Valora la distancia; gastar de más en combustible o transporte público para buscar un producto lejano a veces anula el ahorro obtenido.\n"
+            "4. **Qué hacer:** Revisa el costo por unidad de medida (kilo o litro) antes de decidir el punto de compra."
         )
         botones = [
-            {"texto": "🌐 Portal de Trámites MTSS", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"},
-            {"texto": "🌐 Consultas y Usuario BPS", "url": "https://www.bps.gub.uy/"}
+            {"texto": "🌐 Buscar opciones y comercios cercanos en Mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
         ]
-        
-    elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion"]):
+
+    elif any(p in consulta for p in ["transporte", "bondi", "bus", "pasaje", "viaje", "boleto", "nafta", "combustible", "auto"]):
         respuesta = (
-            "• Opción oficial de referencia: Banco República (BROU), tasa segura sin comisiones ocultas para montos base.\n"
-            "• Opción alternativa en plaza: Redes de cobranza y casas de cambio privadas si buscas cercanía geográfica.\n"
-            "💡 Qué hacer: Revisa la cotización en pantalla antes de realizar la operación para elegir el mejor momento del día.\n"
-            "⚙️ Por qué: Las fluctuaciones cambiarias impactan directamente en tu poder de compra."
+            f"Optimización de movilidad y costos para '{consulta}':\n\n"
+            "1. **Opción de menor costo:** Evalúa abonos mensuales, tarjetas recargables de transporte o escalas locales que reducen el impacto diario en el bolsillo.\n"
+            "2. **Opción de eficiencia de tiempo:** Si el costo de oportunidad es alto, utiliza rutas directas para evitar demoras innecesarias.\n"
+            "3. **Qué hacer:** Planifica los trayectos con anticipación y evita desvíos que disparen el consumo de combustible o pasajes adicionales."
         )
         botones = [
-            {"texto": "🌐 Ver Pizarra Oficial BROU", "url": "https://www.brou.com.uy/cotizaciones"},
-            {"texto": "🌐 Ubicar redes de cambio cercanas", "url": f"https://www.google.com/maps/search/casas+de+cambio+cercanas/@{lat or -34.9011},{lon or -56.1645},14z"}
+            {"texto": "🌐 Ver terminales, estaciones y rutas en Mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},13z"}
         ]
-        
-    elif any(p in consulta for p in ["nafta", "combustible", "gasoil"]):
-        respuesta = (
-            "• Opción unificada oficial: Estaciones ANCAP (precio regulado e idéntico en todo el territorio nacional).\n"
-            "• Opción de optimización de ruta: Planifica cargas completas antes de ingresar a zonas alejadas o rurales donde no hay estaciones.\n"
-            "💡 Qué hacer: Utiliza aplicaciones de fidelización para sumar beneficios o descuentos en cada carga.\n"
-            "⚙️ Por qué: Evita desvíos innecesarios que consumen más combustible del que pretendes ahorrar."
-        )
-        botones = [
-            {"texto": "🌐 Ver Estaciones ANCAP en el Mapa", "url": f"https://www.google.com/maps/search/estaciones+ancap/@{lat or -34.9011},{lon or -56.1645},13z"},
-            {"texto": "🌐 Portal Oficial ANCAP", "url": "https://www.ancap.com.uy/"}
-        ]
-    
+
     else:
         respuesta = (
-            f"• Opción principal sugerida: Evaluar proveedores locales y comercios barriales para evitar gastos excesivos de transporte.\n"
-            f"• Opción alternativa digital: Comparar en plataformas de comercio electrónico de plaza para entrega a domicilio.\n"
-            f"💡 Qué hacer: Revisa los requerimientos previos y compara al menos dos alternativas antes de decidir.\n"
-            f"⚙️ Por qué: Una solución inteligente equilibra precio, distancia y accesibilidad real para tu bolsillo."
+            f"Solución experta orientada a tu consulta sobre '{consulta}':\n\n"
+            "1. **Análisis del problema:** Para resolver esta necesidad al menor costo y con el máximo rendimiento, evita intermediarios y acude directamente a los proveedores o fuentes oficiales de plaza.\n"
+            "2. **Estrategia recomendada:** Compara al menos dos alternativas (la de menor costo operativo y la de referencia segura) antes de tomar una decisión financiera o de gestión.\n"
+            "3. **Qué hacer:** Utiliza los canales directos habilitados para ejecutar la solución de forma inmediata y segura."
         )
         botones = [
-            {"texto": "🌐 Buscar comercios y opciones en Mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"},
-            {"texto": "🌐 Buscar alternativas en la Web", "url": f"https://www.google.com/search?q={query_url}+uruguay"}
+            {"texto": "🌐 Buscar soluciones y sitios exactos en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"},
+            {"texto": "🌐 Consultar referencias oficiales en la Web", "url": f"https://www.google.com/search?q={query_url}+uruguay"}
         ]
 
     return jsonify({"respuesta": respuesta, "botones": botones})
