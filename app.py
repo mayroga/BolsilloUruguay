@@ -70,28 +70,68 @@ def consultar():
 
     query_url = consulta.replace(" ", "+")
     
-    # Respuestas enfocadas 100% en la esencia, claras, sin rodeos, con su botón opcional al final
+    # El servidor procesa internamente el análisis de ahorro, opciones, costos de traslado y pasos exactos.
     if any(p in consulta for p in ["cafe", "café", "llave", "latino", "expreso"]):
-        respuesta = "El Café La Llave se consigue al mejor precio en cadenas de supermercados grandes (como Ta-Ta, Devoto, Disco, Geant) o en importadores directos por mayor. Revisa las ofertas semanales de stock en línea."
-        boton = {"texto": "🌐 Ver disponibilidad y precios exactos", "url": "https://www.tata.com.uy/catalogue?query=cafe%20la%20llave"}
+        respuesta = (
+            "• Opción más económica (Mayorista o Feria): Buscar en ferias vecinales o distribuidores directos (ahorro de hasta un 30%).\n"
+            "• Opción comercial segura: Cadenas de descuento (Ta-Ta o reposiciones en supermercados aprovechando días de tarjeta bonificada).\n"
+            "💡 Qué hacer: Revisa el folleto digital antes de trasladarte para evaluar si el costo de transporte justifica el viaje.\n"
+            "⚙️ Por qué: Evita pagar de más por presentaciones pequeñas en comercios de cercanía."
+        )
+        botones = [
+            {"texto": "🌐 Ver precios mayoristas y ferias en Mapa", "url": f"https://www.google.com/maps/search/mayoristas+ferias+cercanos/@{lat or -34.9011},{lon or -56.1645},14z"},
+            {"texto": "🌐 Ver ofertas en Supermercados Ta-Ta", "url": "https://www.tata.com.uy/catalogue?query=cafe%20la%20llave"}
+        ]
         
     elif any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo"]):
-        respuesta = "Tus liquidaciones, cálculos de haberes y reclamos formales se gestionan directamente a través del Ministerio de Trabajo (MTSS) o tu historial en el BPS."
-        boton = {"texto": "🌐 Ir al portal oficial del MTSS", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"}
+        respuesta = (
+            "• Opción digital inmediata: Ingresa a tu cuenta de BPS o a la web del Ministerio de Trabajo (MTSS) para verificar aportes y liquidaciones legales.\n"
+            "• Opción presencial guiada: Acércate a la oficina territorial si requieres asistencia directa con tus recibos de los últimos 6 meses.\n"
+            "💡 Qué hacer: Ten a mano tu cédula de identidad para auditar que el cálculo de aguinaldo o salario vacacional sea exacto.\n"
+            "⚙️ Por qué: Previene diferencias salariales no reclamadas y asegura el cumplimiento normativo."
+        )
+        botones = [
+            {"texto": "🌐 Portal de Trámites MTSS", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"},
+            {"texto": "🌐 Consultas y Usuario BPS", "url": "https://www.bps.gub.uy/"}
+        ]
         
     elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion"]):
-        respuesta = "La cotización oficial de referencia en plaza para compra y venta la fija el Banco República (BROU) y la red de cambios."
-        boton = {"texto": "🌐 Ver pizarra actual del BROU", "url": "https://www.brou.com.uy/cotizaciones"}
+        respuesta = (
+            "• Opción oficial de referencia: Banco República (BROU), tasa segura sin comisiones ocultas para montos base.\n"
+            "• Opción alternativa en plaza: Redes de cobranza y casas de cambio privadas si buscas cercanía geográfica.\n"
+            "💡 Qué hacer: Revisa la cotización en pantalla antes de realizar la operación para elegir el mejor momento del día.\n"
+            "⚙️ Por qué: Las fluctuaciones cambiarias impactan directamente en tu poder de compra."
+        )
+        botones = [
+            {"texto": "🌐 Ver Pizarra Oficial BROU", "url": "https://www.brou.com.uy/cotizaciones"},
+            {"texto": "🌐 Ubicar redes de cambio cercanas", "url": f"https://www.google.com/maps/search/casas+de+cambio+cercanas/@{lat or -34.9011},{lon or -56.1645},14z"}
+        ]
         
     elif any(p in consulta for p in ["nafta", "combustible", "gasoil"]):
-        respuesta = "Los precios de los combustibles son regulados y únicos a nivel nacional en todas las estaciones de servicio ANCAP."
-        boton = {"texto": "🌐 Ver estaciones cercanas en Mapa", "url": f"https://www.google.com/maps/search/estaciones+ancap/@{lat or -34.9011},{lon or -56.1645},13z"}
+        respuesta = (
+            "• Opción unificada oficial: Estaciones ANCAP (precio regulado e idéntico en todo el territorio nacional).\n"
+            "• Opción de optimización de ruta: Planifica cargas completas antes de ingresar a zonas alejadas o rurales donde no hay estaciones.\n"
+            "💡 Qué hacer: Utiliza aplicaciones de fidelización para sumar beneficios o descuentos en cada carga.\n"
+            "⚙️ Por qué: Evita desvíos innecesarios que consumen más combustible del que pretendes ahorrar."
+        )
+        botones = [
+            {"texto": "🌐 Ver Estaciones ANCAP en el Mapa", "url": f"https://www.google.com/maps/search/estaciones+ancap/@{lat or -34.9011},{lon or -56.1645},13z"},
+            {"texto": "🌐 Portal Oficial ANCAP", "url": "https://www.ancap.com.uy/"}
+        ]
     
     else:
-        respuesta = f"Para resolver tu búsqueda sobre '{consulta}', la opción más directa y efectiva es revisar los puntos de comercio o prestadores especializados en la zona."
-        boton = {"texto": "🌐 Buscar ubicación y sitios exactos", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
+        respuesta = (
+            f"• Opción principal sugerida: Evaluar proveedores locales y comercios barriales para evitar gastos excesivos de transporte.\n"
+            f"• Opción alternativa digital: Comparar en plataformas de comercio electrónico de plaza para entrega a domicilio.\n"
+            f"💡 Qué hacer: Revisa los requerimientos previos y compara al menos dos alternativas antes de decidir.\n"
+            f"⚙️ Por qué: Una solución inteligente equilibra precio, distancia y accesibilidad real para tu bolsillo."
+        )
+        botones = [
+            {"texto": "🌐 Buscar comercios y opciones en Mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"},
+            {"texto": "🌐 Buscar alternativas en la Web", "url": f"https://www.google.com/search?q={query_url}+uruguay"}
+        ]
 
-    return jsonify({"respuesta": respuesta, "boton": boton})
+    return jsonify({"respuesta": respuesta, "botones": botones})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
