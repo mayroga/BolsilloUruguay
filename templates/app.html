@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BolsilloUruguay</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main class="container">
+        <h1>BolsilloUruguay</h1>
+        <p class="subtitle">Asesor de Ahorro y Soluciones</p>
+        
+        <div class="search-box">
+            <input type="text" id="userInput" placeholder="Ej: ¿Dónde comprar más barato o hacer un trámite?" autocomplete="off">
+            <button onclick="enviarConsulta()">Consultar</button>
+        </div>
+
+        <div id="resultado" class="result-box" style="display: none;">
+            <p id="textoRespuesta"></p>
+            <button id="whatsappBtn" class="wa-btn" onclick="compartirWhatsApp()">Compartir por WhatsApp</button>
+        </div>
+    </main>
+
+    <script>
+        async function enviarConsulta() {
+            const mensaje = document.getElementById("userInput").value;
+            if (!mensaje.trim()) return;
+
+            const response = await fetch("/consultar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mensaje })
+            });
+
+            const data = await response.json();
+            document.getElementById("textoRespuesta").innerText = data.respuesta;
+            document.getElementById("resultado").style.display = "block";
+        }
+
+        function compartirWhatsApp() {
+            const texto = document.getElementById("textoRespuesta").innerText;
+            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent("Mirá este dato útil: " + texto)}`;
+            window.open(url, "_blank");
+        }
+    </script>
+</body>
+</html>
