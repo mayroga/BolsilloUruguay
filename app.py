@@ -68,7 +68,7 @@ def exito():
 @app.route("/login-dev", methods=["POST"])
 def login_dev():
     data = request.get_json()
-    if data.get("usuario"] == DEV_USER and data.get("clave") == DEV_PASS:
+    if data.get("usuario") == DEV_USER and data.get("clave") == DEV_PASS:
         session["is_dev"] = True
         session["historial"] = []
         return jsonify({"success": True})
