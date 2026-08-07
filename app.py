@@ -3,6 +3,8 @@ import random
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import stripe
+from google import genai
+from google.genai import types
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "clave-secreta-uruguay")
@@ -14,14 +16,17 @@ DEV_PASS = os.environ.get("DEV_PASS", "secreto123")
 
 URL_BASE_OFICIAL = "https://bolsillouruguay.onrender.com"
 
+# Configuración del cliente de Gemini
+gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+
 SALUDOS_INICIALES = [
     "BolsilloUruguay - ¿Qué necesidad resolvemos hoy?",
     "BolsilloUruguay - ¿En qué te puedo orientar?",
-    "BolsilloUruguay - Cuéntame, ¿qué andas buscando resolver?",
+    "BolsilloUruguay - Cuéntame, qué andas buscando resolver?",
     "BolsilloUruguay - ¿Qué dato o solución precisas?",
     "BolsilloUruguay - Adelante, ¿en qué te ayudamos?",
     "BolsilloUruguay - ¿Qué pago o ahorro revisamos?",
-    "BolsilloUruguay - Escucho tu consulta, ¿qué necesitas?"
+    "BolsilloUruguay - Escucho tu consulta, qué necesitas?"
 ]
 
 def verificar_acceso_pagado():
@@ -80,75 +85,59 @@ def consultar():
         return jsonify({"respuesta": f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\nSu acceso de asesoría ha concluido. Le sugerimos renovar su plan para continuar recibiendo orientación."}), 403
 
     data = request.get_json()
-    consulta = data.get("mensaje", "").strip()
+    consulta = data.get("mensaje", "").lower().strip()
     lat = data.get("lat")
     lon = data.get("lon")
 
     if not consulta:
-        return jsonify({"respuesta": f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\nIndíquenos qué trámite o necesidad desea resolver en Uruguay.", "pausa_voz": True})
+        return jsonify({"respuesta": f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\nIndíquenos qué trámite, compra o gestión desea resolver en Uruguay.", "pausa_voz": True})
 
     historial = session.get("historial", [])
     query_url = consulta.replace(" ", "+")
-    texto_lower = consulta.lower()
 
-    # DETECCIÓN INTELIGENTE DINÁMICA SEGÚN EL TIPO DE CONSULTA
-    if any(p in texto_lower for p in ["salario", "sueldo", "pago", "cobro", "incompleto", "trabajo", "despido", "mtss", "recibo"]):
-        cuerpo_respuesta = (
-            f"Sugerencia de asesoría ante su consulta sobre '{consulta}':\n\n"
-            "1. Reúna sus recibos de sueldo, constancias de horario y comunicaciones con la empresa.\n"
-            "2. Presente su reclamo formal directamente ante el Ministerio de Trabajo y Seguridad Social (MTSS).\n"
-            "3. Acérquese a la oficina del MTSS para gestionar una conciliación laboral."
+    # Prompt del Sistema estricto para que el modelo haga su trabajo real sin rodeos
+    system_instruction = (
+        "Eres el asesor experto de la aplicación 'BolsilloUruguay'. "
+        "Tu única tarea es dar respuestas directas, exactas y resolutivas para resolver problemas cotidianos, trámites, compras, salarios, salud, transporte o servicios en Uruguay. "
+        "REGLAS ESTRICTAS:\n"
+        "1. Cero respuestas genéricas o plantillas vacías. Si te preguntan dónde comprar ropa barata, diles zonas, ferias o comercios reales de Montevideo o el interior. Si te preguntan por sueldos impagos, menciona el MTSS de forma directa. Adapta la respuesta 100% a lo que el usuario preguntó.\n"
+        "2. Estructura la respuesta exactamente en 3 pasos directos y útiles.\n"
+        "3. Usa un tono de asesor profesional y prudente (usa términos como 'Sugerencia de asesoría' o 'Le sugerimos'), sin sonar como autoridad gubernamental.\n"
+        "4. No digas ni IA, ni ChatGPT, ni inteligencia artificial.\n"
+        "5. Encabeza siempre tu respuesta con: BolsilloUruguay - https://bolsillouruguay.onrender.com\n\n"
+    )
+
+    try:
+        # Llamada directa al modelo de Gemini para que analice y resuelva con total libertad
+        response = gemini_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=consulta,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.3,
+            ),
         )
-        botones = [
-            {"texto": "Consultas MTSS", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"},
-            {"texto": "Ver oficinas en el mapa", "url": f"https://www.google.com/maps/search/ministerio+de+trabajo+uruguay/@{lat or -34.9011},{lon or -56.1645},14z"}
-        ]
-
-    elif any(p in texto_lower for p in ["bps", "jubilacion", "paro", "asignacion", "historia laboral", "desempleo"]):
+        cuerpo_respuesta = response.text
+    except Exception as e:
+        # Fallback de emergencia si la API demora o falla
         cuerpo_respuesta = (
-            f"Sugerencia de asesoría ante su consulta sobre '{consulta}':\n\n"
-            "1. Ingrese a los servicios en línea del BPS con su cédula de identidad digital.\n"
-            "2. Verifique su historia laboral o el estado de sus trámites previsionales.\n"
-            "3. Gestione su subsidio o prestación directamente en las plataformas oficiales habilitadas."
+            f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\n"
+            f"Sugerencia de asesoría para su consulta sobre '{consulta}':\n\n"
+            "1. Verifique los detalles y antecedentes específicos de su planteo.\n"
+            "2. Contacte directamente a la entidad o comercio vinculado en su zona.\n"
+            "3. Utilice el mapa interactivo para ubicar la solución más próxima."
         )
-        botones = [
-            {"texto": "Servicios en Línea BPS", "url": "https://www.bps.gub.uy/"},
-            {"texto": "Ver oficinas BPS en el mapa", "url": f"https://www.google.com/maps/search/bps+oficina+uruguay/@{lat or -34.9011},{lon or -56.1645},14z"}
-        ]
 
-    elif any(p in texto_lower for p in ["patente", "multa", "sucive", "vehiculo", "auto", "moto", "padron"]):
-        cuerpo_respuesta = (
-            f"Sugerencia de asesoría ante su consulta sobre '{consulta}':\n\n"
-            "1. Tenga a mano el número de matrícula y padrón de su vehículo o bien.\n"
-            "2. Consulte los estados de cuenta y opciones de pago en el portal unificado SUCIVE.\n"
-            "3. Verifique normativas o multas directamente con la Intendencia correspondiente."
-        )
-        botones = [
-            {"texto": "Portal SUCIVE", "url": "https://www.sucive.gub.uy/"},
-            {"texto": "Congreso de Intendencias", "url": "https://congresodeintendentes.gub.uy/"}
-        ]
+    botones = [
+        {"texto": f"Buscar '{consulta}' en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
+    ]
 
-    else:
-        # RESPUESTA DIRECTA ÚTIL PARA CUALQUIER OTRA COSA (COMPRAS, PRECIOS, LUGARES, ETC.)
-        cuerpo_respuesta = (
-            f"Sugerencia de asesoría para resolver '{consulta}':\n\n"
-            f"1. Evalúe las opciones de comercio, servicio o gestión disponibles en su zona en Uruguay.\n"
-            f"2. Compare precios, presupuestos o condiciones antes de concretar su decisión.\n"
-            f"3. Utilice el mapa interactivo para ubicar los locales o puntos de interés más cercanos."
-        )
-        botones = [
-            {"texto": f"Buscar '{consulta}' en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
-        ]
-
-    firma_app = f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\n"
-    respuesta = firma_app + cuerpo_respuesta
-
-    historial.append({"usuario": consulta, "asesor": respuesta})
+    historial.append({"usuario": consulta, "asesor": cuerpo_respuesta})
     if len(historial) > 10:
         historial.pop(0)
     session["historial"] = historial
 
-    return jsonify({"respuesta": respuesta, "botones": botones, "pausa_voz": True})
+    return jsonify({"respuesta": cuerpo_respuesta, "botones": botones, "pausa_voz": True})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
