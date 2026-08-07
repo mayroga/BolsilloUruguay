@@ -197,7 +197,7 @@ def consultar():
         "- CERO DIAGNÓSTICOS MÉDICOS: Indica dónde están los centros médicos o farmacias, pero JAMÁS emitas diagnósticos, opiniones médicas ni recetes medicamentos.\n\n"
 
         "REGLAS ESTRICTAS DE FORMATO (CRÍTICO PARA LECTOR DE VOZ):\n"
-        "- ENCABEZADO OBLIGATORIO: Comienza siempre la primera línea de tu respuesta únicamente con la palabra: BolsilloUruguay.\n"
+        "- ENCABEZADO OBLIGATORIO: Comienza siempre la primera línea de tu respuesta únicamente con la palabra: BolsilloUruguay - https://bolsillouruguay.onrender.com.\n"
         "- PROHIBIDO ENLACES O URLS: No incluyas NINGUNA dirección web, enlaces HTTP ni textos de dominios en tu respuesta. El usuario solo debe recibir texto limpio.\n"
         "- TEXTO PLANO PURO: Está TERMINANTEMENTE PROHIBIDO el uso de asteriscos (*), almohadillas (#), guiones de lista (- ) o cualquier formato Markdown. Escribe exclusivamente en párrafos limpios, directos y conversacionales para que el lector de voz digital de la app lea el texto de forma fluida, natural, humana y sin tropiezos.\n"
     )
