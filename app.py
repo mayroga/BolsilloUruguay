@@ -45,6 +45,42 @@ def verificar_acceso_pagado():
             
     return False
 
+def extraer_lugar_para_mapa(consulta):
+    """
+    Traduce la consulta del usuario a una categoría o lugar físico real de Google Maps
+    para evitar enviar frases de síntomas, dolores o textos largos al mapa.
+    """
+    c = consulta.lower()
+    
+    # Salud y Emergencias
+    if any(k in c for k in ["dolor", "orino", "ardor", "fiebre", "hospital", "clínica", "medico", "médico", "doctor", "emergencia", "salud", "enfermo", "farmacia", "pastilla", "receta"]):
+        if "farmacia" in c:
+            return "farmacia"
+        return "hospital clinica centro de salud Montevideo"
+    
+    # Trámites y Gobierno en Uruguay
+    if "bps" in c or "jubilacion" in c or "paro" in c or "historia laboral" in c:
+        return "BPS oficina Montevideo"
+    if "dgi" in c or "monotributo" in c or "impuesto" in c:
+        return "DGI oficina central Montevideo"
+    if "sucive" in c or "patente" in c or "multa" in c:
+        return "intendencia de Montevideo"
+    if "mtss" in c or "trabajo" in c or "despido" in c:
+        return "Ministerio de Trabajo Montevideo"
+    if "migraciones" in c or "residencia" in c:
+        return "Direccion Nacional de Migraciones Montevideo"
+    if "brou" in c or "banco" in c or "dinero" in c:
+        return "BROU banco"
+    
+    # Economía y Comercio
+    if "mercado" in c or "feria" in c or "supermercado" in c or "comida" in c or "ropa" in c:
+        return "supermercado feria Montevideo"
+    if "gas" in c or "supergas" in c or "combustible" in c or "gasolinera" in c:
+        return "gasolinera Ancap Ancap Supergas"
+        
+    # Por defecto, si menciona un lugar específico o genérico, limpiamos conectores y usamos palabras clave
+    return "hospital farmacia comercio Montevideo"
+
 @app.route("/")
 def index():
     if verificar_acceso_pagado():
@@ -98,7 +134,10 @@ def consultar():
         return jsonify({"respuesta": f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\nIndíquenos qué trámite, compra, servicio o gestión desea resolver en Uruguay.", "pausa_voz": True})
 
     historial = session.get("historial", [])
-    query_url = consulta.replace(" ", "+")
+    
+    # LÓGICA CORREGIDA PARA MAPAS: Extraemos el establecimiento físico real, nunca síntomas ni texto largo
+    lugar_mapa = extraer_lugar_para_mapa(consulta)
+    query_mapa_url = lugar_mapa.replace(" ", "+")
 
     # PROPOSITO AMPLIO, COMERCIAL Y DE GUÍA DIRECTA PARA MAY ROGA LLC
     system_instruction = (
@@ -110,7 +149,7 @@ def consultar():
         "3. RUTA HASTA LA PUERTA: Tu único objetivo es guiar, dar la información que normalmente ocultan o cobran, y llevar al usuario hasta la puerta de la institución, comercio, profesional o servicio mediante 3 pasos claros y un enlace directo. Lo que ocurra después de llegar ya depende enteramente del cliente y del prestador, sin responsabilidad para la app.\n"
         "REGLAS CRÍTICAS DE VERDAD Y SEGURIDAD LEGAL:\n"
         "1. SOLO DI LA REALIDAD ESTRICTA: Está terminantemente prohibido inventar datos, precios falsos o direcciones inexistentes. Basate en la realidad de Uruguay.\n"
-        "2. CERO DIAGNÓSTICOS MÉDICOS: Si preguntan por salud, indica dónde están los centros y rangos de precios de clínicas u hospitales, pero jamás emitas diagnósticos ni recetes.\n"
+        "2. CERO DIAGNÓSTICOS MÉDICOS: Si preguntan por salud, síntomas o dolencias, indica estrictamente dónde están los hospitales o centros asistenciales más cercanos para que sean atendidos por un profesional, jamás emitas diagnósticos ni recetes medicamentos.\n"
         "3. CERO ASTERISCOS, NEGRITAS O MARKDOWN: Escribe texto plano y conversacional puro para que la lectura de voz sea fluida y humana.\n"
         "4. LENGUAJE DE ASESOR PRUDENTE: Usa frases como 'Sugerencia de asesoría' o 'Le sugerimos'. No actúes como autoridad estatal.\n"
         "5. No menciones IA ni tecnologías internas.\n"
@@ -159,8 +198,9 @@ def consultar():
             "3. Utilice el mapa interactivo para ubicar la alternativa exacta más próxima."
         )
 
+    # Los botones ahora buscan establecimientos físicos reales y limpios en Google Maps
     botones = [
-        {"texto": f"Buscar '{consulta}' en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
+        {"texto": f"Ubicar centros en el mapa", "url": f"https://www.google.com/maps/search/{query_mapa_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
     ]
 
     historial.append({"usuario": consulta, "asesor": cuerpo_respuesta})
