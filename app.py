@@ -15,13 +15,13 @@ DEV_PASS = os.environ.get("DEV_PASS", "secreto123")
 URL_BASE_OFICIAL = "https://bolsillouruguay.onrender.com"
 
 SALUDOS_INICIALES = [
-    "Que necesidad resolvemos hoy",
-    "En que te puedo orientar en este momento",
-    "Cuéntame que andas buscando resolver",
-    "Que dato o solución precisas ahora",
-    "Adelante en que te ayudamos hoy",
-    "Que gestión o ahorro revisamos",
-    "Escucho tu consulta que necesitas"
+    "¿Qué necesidad resolvemos hoy?",
+    "¿En qué te puedo orientar?",
+    "Cuéntame, ¿qué andas buscando resolver?",
+    "¿Qué dato o solución precisas?",
+    "Adelante, ¿en qué te ayudamos?",
+    "¿Qué pago o ahorro revisamos?",
+    "Escucho tu consulta, ¿qué necesitas?"
 ]
 
 def verificar_acceso_pagado():
@@ -85,7 +85,7 @@ def consultar():
     lon = data.get("lon")
 
     if not consulta:
-        return jsonify({"respuesta": "Escribe o di que necesidad de ahorro o tramite necesitas resolver hoy."})
+        return jsonify({"respuesta": "Dime qué quieres resolver hoy.", "pausa_voz": True})
 
     historial = session.get("historial", [])
     query_url = consulta.replace(" ", "+")
@@ -104,93 +104,88 @@ def consultar():
 
     if not es_valida:
         cuerpo_respuesta = (
-            "Esta aplicación esta especializada exclusivamente en asesoría de ahorro, compras inteligentes, movilidad, trámites laborales, salud accesible y soluciones económicas en plaza. "
-            "Por favor, realiza una consulta orientada a resolver un problema de tu economía, gestiones de trabajo, costos o servicios para brindarte la solución exacta."
+            "Solo hablo de cosas para ahorrar dinero, compras, trabajo, salud y trámites sencillos. "
+            "Cuéntame qué problema tienes para ayudarte con palabras muy fáciles."
         )
         botones = []
     else:
         if any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley"]):
             cuerpo_respuesta = (
-                "Para resolver esta situación salarial y proteger tus ingresos:\n\n"
-                "1. Entra a tu cuenta del BPS en el servicio de historia laboral para verificar que tus aportes y días trabajados estén registrados exactamente como corresponden.\n"
-                "2. Revisa el desglose de tu recibo de sueldo frente a los laudos vigentes de tu categoría en los Consejos de Salarios.\n"
-                "3. Presenta un reclamo escrito ante la administración o gerencia de la empresa exigiendo el ajuste o pago en plazo.\n"
-                "4. Si no obtienes respuesta inmediata, agenda una audiencia de conciliación sin costo en el Ministerio de Trabajo y Seguridad Social."
+                "Para cobrar lo justo y que no te falte plata:\n\n"
+                "1. Mira bien tu recibo de sueldo en un papel o en el celular.\n"
+                "2. Si te pagaron menos, anda a hablar tranquilo con el jefe o el que paga.\n"
+                "3. Si no te quieren dar tu plata, ve al Ministerio de Trabajo a pedir ayuda gratis."
             )
             botones = [
-                {"texto": "Consultar BPS", "url": "https://www.bps.gub.uy/"},
-                {"texto": "Agendar en MTSS", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"}
+                {"texto": "Ir al BPS", "url": "https://www.bps.gub.uy/"},
+                {"texto": "Ir al Ministerio de Trabajo", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"}
             ]
 
         elif any(p in consulta for p in ["abogado", "contrato", "incumplimiento", "demanda"]):
             cuerpo_respuesta = (
-                "Para solucionar un conflicto contractual o legal al menor costo posible:\n\n"
-                "1. Acude primero a un centro de mediación o juzgado de paz de tu zona para lograr un acuerdo directo y gratuito antes de iniciar juicios largos.\n"
-                "2. Si precisas asistencia legal formal y tus ingresos son limitados, solicita orientación en los consultorios jurídicos públicos habilitados.\n"
-                "3. Si contratas un profesional particular, pacta honorarios fijos por escrito y etapas cumplidas para evitar cobros desmedidos.\n"
-                "4. Junta todos los comprobantes, mensajes y el contrato original para respaldar tu reclamo desde el primer minuto."
+                "Para solucionar un problema con papeles o plata sin gastar de más:\n\n"
+                "1. No gastes en abogados caros de entrada.\n"
+                "2. Ve al Juzgado de Paz de tu barrio y pide hablar con alguien para solucionar el problema hablando.\n"
+                "3. Guarda siempre tus papeles y boletas."
             )
             botones = [
-                {"texto": "Ver juzgados de paz y mediación", "url": f"https://www.google.com/maps/search/juzgado+de+paz+centros+de+mediacion/@{lat or -34.9011},{lon or -56.1645},14z"}
+                {"texto": "Ver juzgados cerca", "url": f"https://www.google.com/maps/search/juzgado+de+paz/@{lat or -34.9011},{lon or -56.1645},14z"}
             ]
 
         elif any(p in consulta for p in ["clinica", "salud", "medico", "policlinica", "hospital"]):
             cuerpo_respuesta = (
-                "Para encontrar atención médica rápida y optimizar tus gastos de salud:\n\n"
-                "1. Dirígete a la policlínica barrial de ASSE o al centro de atención primaria más cercano de tu red para consultas generales y recetas bonificadas.\n"
-                "2. Compara los costos de la orden médica y los timbres profesionales en tu institución de asistencia médica antes de concurrir.\n"
-                "3. Verifica si los medicamentos recetados están incluidos en el formulario terapéutico de medicamentos para evitar sobrecostos en farmacias privadas."
+                "Para verte con un doctor sin gastar mucho:\n\n"
+                "1. Ve a la policlínica de tu barrio o al hospital público más cercano.\n"
+                "2. Pide turno temprano para que te atiendan sin pagar consulta cara.\n"
+                "3. Lleva tu cédula."
             )
             botones = [
-                {"texto": "Ver policlínicas y centros de salud", "url": f"https://www.google.com/maps/search/clinica+policlinica+medico/@{lat or -34.9011},{lon or -56.1645},14z"}
+                {"texto": "Ver policlínicas cerca", "url": f"https://www.google.com/maps/search/policlinica+medico/@{lat or -34.9011},{lon or -56.1645},14z"}
             ]
 
         elif any(p in consulta for p in ["carne", "asado", "carniceria", "san gregorio", "polanco"]):
             cuerpo_respuesta = (
-                "Para comprar carne y alimentos al mejor precio en San Gregorio de Polanco:\n\n"
-                "• Visita el Autoservicio La Cadena sobre Gral. Artigas para encontrar ofertas en cortes y productos de almacén.\n"
-                "• Revisa las opciones en Cutti Congelados en Gral. Artigas 132 para stockear mercadería a menor costo.\n"
-                "• Compara precios con Carnicería La Pampa o Autoservicio Vida Nueva para elegir el corte más conveniente del día."
+                "Para comprar comida barata:\n\n"
+                "• Ve al Autoservicio La Cadena en la calle General Artigas para buscar ofertas.\n"
+                "• Mira también en Cutti Congelados si buscas pollo o carne a mejor precio.\n"
+                "• Compara en dos almacenes antes de comprar."
             )
             botones = [
-                {"texto": "Ver ubicación exacta de los comercios", "url": f"https://www.google.com/maps/search/carnicerias+en+San+Gregorio+de+Polanco/@{lat or -32.6517},{lon or -55.5861},14z"}
+                {"texto": "Ver comercios en el mapa", "url": f"https://www.google.com/maps/search/carnicerias+en+San+Gregorio+de+Polanco/@{lat or -32.6517},{lon or -55.5861},14z"}
             ]
 
         elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion"]):
             cuerpo_respuesta = (
-                "Para realizar operaciones de cambio de moneda de forma segura y conveniente:\n\n"
-                "• Consulta la pizarra oficial del Banco República (BROU) para tener la referencia exacta sin comisiones ocultas.\n"
-                "• Compara las tasas de compra y venta en las redes de cobranza y casas de cambio privadas de tu zona.\n"
-                "• Realiza la operación en los horarios de mayor estabilidad cambiaria durante la jornada bancaria."
+                "Para cambiar tus pesos o dólares de forma segura:\n\n"
+                "• Ve al Banco República (BROU) que es seguro y no cobra de más.\n"
+                "• Mira bien el número en la pantalla antes de entregar tu plata."
             )
             botones = [
-                {"texto": "Ver pizarra actual del BROU", "url": "https://www.brou.com.uy/cotizaciones"},
-                {"texto": "Ver casas de cambio cercanas", "url": f"https://www.google.com/maps/search/casas+de+cambio/@{lat or -34.9011},{lon or -56.1645},14z"}
+                {"texto": "Ver valor del dólar en BROU", "url": "https://www.brou.com.uy/cotizaciones"},
+                {"texto": "Ver casas de cambio cerca", "url": f"https://www.google.com/maps/search/casas+de+cambio/@{lat or -34.9011},{lon or -56.1645},14z"}
             ]
 
         elif any(p in consulta for p in ["transporte", "bondi", "bus", "pasaje", "viaje", "boleto", "nafta", "combustible", "auto"]):
             cuerpo_respuesta = (
-                "Para optimizar tus traslados y reducir el gasto en movilidad:\n\n"
-                "1. Utiliza tarjetas recargables o abonos de transporte para aprovechar tarifas bonificadas en tus recorridos frecuentes.\n"
-                "2. Planifica los trayectos directos para evitar desvíos innecesarios que eleven el consumo de combustible o pasajes.\n"
-                "3. Consulta los puntos de recarga y las terminales operativas antes de iniciar tu viaje."
+                "Para moverte gastando menos:\n\n"
+                "1. Usa la tarjeta de boleto si tiene descuento.\n"
+                "2. Pregunta cuál es el colectivo o bondi directo para no dar vueltas de más."
             )
             botones = [
-                {"texto": "Ver terminales y estaciones en mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},13z"}
+                {"texto": "Ver paradas y rutas", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},13z"}
             ]
 
         else:
             cuerpo_respuesta = (
-                "Para resolver esta gestión de forma directa y económica:\n\n"
-                "1. Evita intermediarios innecesarios y comunícate directamente con los canales oficiales de atención o proveedores autorizados.\n"
-                "2. Compara al menos dos opciones de costo operativo antes de comprometer tu presupuesto.\n"
-                "3. Ejecuta la solución mediante los accesos directos habilitados para completar el trámite de forma segura."
+                "Para resolver esto fácil y rápido:\n\n"
+                "1. No pagues de más ni hables con intermediarios.\n"
+                "2. Ve directo al lugar que te solucione el problema.\n"
+                "3. Toca el botón de abajo para buscar el sitio exacto en el mapa."
             )
             botones = [
-                {"texto": "Buscar soluciones en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
+                {"texto": "Buscar en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
             ]
 
-    # Incorporar el enlace oficial y el nombre de la app al inicio para compartir por WhatsApp limpiamente
     firma_app = f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\n"
     respuesta = firma_app + cuerpo_respuesta
 
@@ -199,7 +194,7 @@ def consultar():
         historial.pop(0)
     session["historial"] = historial
 
-    return jsonify({"respuesta": respuesta, "botones": botones})
+    return jsonify({"respuesta": respuesta, "botones": botones, "pausa_voz": True})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
