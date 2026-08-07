@@ -103,14 +103,14 @@ def consultar():
         es_valida = True
 
     if not es_valida:
-        respuesta = (
+        cuerpo_respuesta = (
             "Esta aplicación esta especializada exclusivamente en asesoría de ahorro, compras inteligentes, movilidad, trámites laborales, salud accesible y soluciones económicas en plaza. "
             "Por favor, realiza una consulta orientada a resolver un problema de tu economía, gestiones de trabajo, costos o servicios para brindarte la solución exacta."
         )
         botones = []
     else:
         if any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley"]):
-            respuesta = (
+            cuerpo_respuesta = (
                 f"Para resolver tu situación sobre '{consulta}' de forma efectiva y sin gastar en abogados:\n\n"
                 "1. Revisión de recibos: Verifica tus recibos de sueldo y tu historia laboral digital en el BPS para contrastar los números reales frente a lo que corresponde por ley.\n"
                 "2. Cálculos y base legal: Si se trata de haberes impagos o liquidación, recuerda que se estructuran sobre los promedios y días trabajados exactos.\n"
@@ -123,7 +123,7 @@ def consultar():
             ]
 
         elif any(p in consulta for p in ["abogado", "contrato", "incumplimiento", "demanda"]):
-            respuesta = (
+            cuerpo_respuesta = (
                 "Para resolver un incumplimiento de contrato o situación legal buscando la opción más económica y protegiendo tu dinero:\n\n"
                 "1. Mediación inicial: Antes de contratar un abogado particular costoso, acude a los centros de mediación o justicia de paz locales para conciliaciones gratuitas o de bajo costo.\n"
                 "2. Asistencia pública: Si tus ingresos son limitados, verifica el acceso a defensorías públicas.\n"
@@ -135,7 +135,7 @@ def consultar():
             ]
 
         elif any(p in consulta for p in ["clinica", "salud", "medico", "policlinica", "hospital"]):
-            respuesta = (
+            cuerpo_respuesta = (
                 f"Para encontrar la mejor opción de salud y optimizar tus gastos médicos:\n\n"
                 "1. Opción pública: Red de atención primaria y policlínicas barriales de la zona para consultas y medicamentos bonificados.\n"
                 "2. Opción mutual: Compara cuotas sociales de instituciones médicas privadas locales si buscas cobertura extendida.\n"
@@ -146,7 +146,7 @@ def consultar():
             ]
 
         elif any(p in consulta for p in ["carne", "asado", "carniceria", "san gregorio", "polanco"]):
-            respuesta = (
+            cuerpo_respuesta = (
                 "Opciones directas de compra de carne en San Gregorio de Polanco según lo que busques gastar:\n\n"
                 "• Opción económica: Autoservicio La Cadena en General Artigas, ideal para surtidos generales y buenos precios.\n"
                 "• Opción en congelados: Cutti Congelados en General Artigas 132, excelente variedad para stockear.\n"
@@ -157,7 +157,7 @@ def consultar():
             ]
 
         elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion"]):
-            respuesta = (
+            cuerpo_respuesta = (
                 "Para cambiar dinero al mejor valor y sin riesgos:\n\n"
                 "• Opción oficial: Banco República, tasa segura sin comisiones ocultas para montos base.\n"
                 "• Opción alternativa: Redes de cobranza y casas de cambio privadas si buscas cercanía geográfica.\n"
@@ -169,7 +169,7 @@ def consultar():
             ]
 
         elif any(p in consulta for p in ["transporte", "bondi", "bus", "pasaje", "viaje", "boleto", "nafta", "combustible", "auto"]):
-            respuesta = (
+            cuerpo_respuesta = (
                 f"Optimización de movilidad y costos para '{consulta}':\n\n"
                 "1. Menor costo: Evalúa abonos mensuales, tarjetas recargables de transporte o escalas locales que reducen el impacto diario.\n"
                 "2. Eficiencia: Utiliza rutas directas para evitar demoras innecesarias.\n"
@@ -180,7 +180,7 @@ def consultar():
             ]
 
         else:
-            respuesta = (
+            cuerpo_respuesta = (
                 f"Solución orientada a tu consulta sobre '{consulta}':\n\n"
                 "1. Análisis: Para resolver esta necesidad al menor costo, evita intermediarios y acude directamente a los proveedores o fuentes oficiales.\n"
                 "2. Estrategia: Compara al menos dos alternativas de menor costo operativo antes de tomar una decisión financiera.\n"
@@ -189,6 +189,10 @@ def consultar():
             botones = [
                 {"texto": "Buscar soluciones en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
             ]
+
+    # Incorporar el nombre de la app y el enlace oficial al inicio de cada respuesta para WhatsApp
+    firma_app = f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\n"
+    respuesta = firma_app + cuerpo_respuesta
 
     historial.append({"usuario": consulta, "asesor": respuesta})
     if len(historial) > 10:
