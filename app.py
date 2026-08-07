@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import stripe
 from google import genai
 from google.genai import types
+from openai import OpenAI
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "clave-secreta-uruguay")
@@ -16,16 +17,20 @@ DEV_PASS = os.environ.get("DEV_PASS", "secreto123")
 
 URL_BASE_OFICIAL = "https://bolsillouruguay.onrender.com"
 
-# Configuración del cliente de Gemini
-gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+# Configuración de Clientes (Principal Gemini y Respaldo OpenAI / ChatGPT)
+api_key_gemini = os.environ.get("GEMINI_API_KEY")
+gemini_client = genai.Client(api_key=api_key_gemini) if api_key_gemini else None
+
+api_key_openai = os.environ.get("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=api_key_openai) if api_key_openai else None
 
 SALUDOS_INICIALES = [
-    "BolsilloUruguay - ¿Qué necesidad resolvemos hoy?",
-    "BolsilloUruguay - ¿En qué te puedo orientar?",
+    "BolsilloUruguay - Qué necesidad resolvemos hoy?",
+    "BolsilloUruguay - En qué te puedo orientar?",
     "BolsilloUruguay - Cuéntame, qué andas buscando resolver?",
-    "BolsilloUruguay - ¿Qué dato o solución precisas?",
-    "BolsilloUruguay - Adelante, ¿en qué te ayudamos?",
-    "BolsilloUruguay - ¿Qué pago o ahorro revisamos?",
+    "BolsilloUruguay - Qué dato o solución precisas?",
+    "BolsilloUruguay - Adelante, en qué te ayudamos?",
+    "BolsilloUruguay - Qué pago o ahorro revisamos?",
     "BolsilloUruguay - Escucho tu consulta, qué necesitas?"
 ]
 
@@ -90,42 +95,68 @@ def consultar():
     lon = data.get("lon")
 
     if not consulta:
-        return jsonify({"respuesta": f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\nIndíquenos qué trámite, compra o gestión desea resolver en Uruguay.", "pausa_voz": True})
+        return jsonify({"respuesta": f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\nIndíquenos qué trámite, compra, servicio o gestión desea resolver en Uruguay.", "pausa_voz": True})
 
     historial = session.get("historial", [])
     query_url = consulta.replace(" ", "+")
 
-    # Prompt del Sistema estricto para que el modelo haga su trabajo real sin rodeos
+    # PROPOSITO AMPLIO, COMERCIAL Y DE GUÍA DIRECTA PARA MAY ROGA LLC
     system_instruction = (
-        "Eres el asesor experto de la aplicación 'BolsilloUruguay'. "
-        "Tu única tarea es dar respuestas directas, exactas y resolutivas para resolver problemas cotidianos, trámites, compras, salarios, salud, transporte o servicios en Uruguay. "
-        "REGLAS ESTRICTAS:\n"
-        "1. Cero respuestas genéricas o plantillas vacías. Si te preguntan dónde comprar ropa barata, diles zonas, ferias o comercios reales de Montevideo o el interior. Si te preguntan por sueldos impagos, menciona el MTSS de forma directa. Adapta la respuesta 100% a lo que el usuario preguntó.\n"
-        "2. Estructura la respuesta exactamente en 3 pasos directos y útiles.\n"
-        "3. Usa un tono de asesor profesional y prudente (usa términos como 'Sugerencia de asesoría' o 'Le sugerimos'), sin sonar como autoridad gubernamental.\n"
-        "4. No digas ni IA, ni ChatGPT, ni inteligencia artificial.\n"
-        "5. Encabeza siempre tu respuesta con: BolsilloUruguay - https://bolsillouruguay.onrender.com\n\n"
+        "Eres el asesor experto de la aplicación BolsilloUruguay, operada por MAY ROGA LLC. "
+        "BolsilloUruguay se creó para romper con el laberinto burocrático del Estado y frenar el abuso de intermediarios y gestores caros que cobran por trámites que son gratuitos. "
+        "ALCANCE TOTAL DE LA APLICACIÓN:\n"
+        "1. AMPLIO Y COMERCIAL: No te limites solo a trámites públicos. Guía al usuario en todo lo que necesite en Uruguay: economía diaria, costos de vida, precios (desde opciones más económicas hasta las más premium), ubicación de hospitales, clínicas, farmacias, comercios, profesionales, abogados o servicios particulares.\n"
+        "2. ORIENTACIÓN DE PRECIOS Y OPCIONES: Si consultan por salud, clínicas, servicios o compras, detalla rangos de precios (económicos hasta caros), ubicaciones y cómo encontrarlos.\n"
+        "3. RUTA HASTA LA PUERTA: Tu único objetivo es guiar, dar la información que normalmente ocultan o cobran, y llevar al usuario hasta la puerta de la institución, comercio, profesional o servicio mediante 3 pasos claros y un enlace directo. Lo que ocurra después de llegar ya depende enteramente del cliente y del prestador, sin responsabilidad para la app.\n"
+        "REGLAS CRÍTICAS DE VERDAD Y SEGURIDAD LEGAL:\n"
+        "1. SOLO DI LA REALIDAD ESTRICTA: Está terminantemente prohibido inventar datos, precios falsos o direcciones inexistentes. Basate en la realidad de Uruguay.\n"
+        "2. CERO DIAGNÓSTICOS MÉDICOS: Si preguntan por salud, indica dónde están los centros y rangos de precios de clínicas u hospitales, pero jamás emitas diagnósticos ni recetes.\n"
+        "3. CERO ASTERISCOS, NEGRITAS O MARKDOWN: Escribe texto plano y conversacional puro para que la lectura de voz sea fluida y humana.\n"
+        "4. LENGUAJE DE ASESOR PRUDENTE: Usa frases como 'Sugerencia de asesoría' o 'Le sugerimos'. No actúes como autoridad estatal.\n"
+        "5. No menciones IA ni tecnologías internas.\n"
+        "6. Encabeza siempre la respuesta con: BolsilloUruguay - https://bolsillouruguay.onrender.com\n\n"
     )
 
+    cuerpo_respuesta = None
+
+    # INTENTO 1: USAR GEMINI (PRINCIPAL)
     try:
-        # Llamada directa al modelo de Gemini para que analice y resuelva con total libertad
-        response = gemini_client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=consulta,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.3,
-            ),
-        )
-        cuerpo_respuesta = response.text
+        if gemini_client:
+            response = gemini_client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=consulta,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.2,
+                ),
+            )
+            cuerpo_respuesta = response.text.replace("*", "").replace("#", "")
     except Exception as e:
-        # Fallback de emergencia si la API demora o falla
+        cuerpo_respuesta = None
+
+    # INTENTO 2: RESPALDO CON OPENAI (CHATGPT) SI GEMINI FALLA
+    if not cuerpo_respuesta and openai_client:
+        try:
+            response_openai = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": consulta}
+                ],
+                temperature=0.2
+            )
+            cuerpo_respuesta = response_openai.choices[0].message.content.replace("*", "").replace("#", "")
+        except Exception as e:
+            cuerpo_respuesta = None
+
+    # RESPALDO FINAL DE EMERGENCIA SI AMBOS FALLAN
+    if not cuerpo_respuesta:
         cuerpo_respuesta = (
             f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\n"
-            f"Sugerencia de asesoría para su consulta sobre '{consulta}':\n\n"
-            "1. Verifique los detalles y antecedentes específicos de su planteo.\n"
-            "2. Contacte directamente a la entidad o comercio vinculado en su zona.\n"
-            "3. Utilice el mapa interactivo para ubicar la solución más próxima."
+            f"Sugerencia de asesoría para su consulta sobre {consulta}:\n\n"
+            "1. Identifique las opciones de mercado, comercio o servicio disponibles en su zona de Uruguay.\n"
+            "2. Compare precios, rangos de costos y requisitos antes de avanzar con su gestión.\n"
+            "3. Utilice el mapa interactivo para ubicar la alternativa exacta más próxima."
         )
 
     botones = [
