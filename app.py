@@ -68,7 +68,7 @@ def exito():
 @app.route("/login-dev", methods=["POST"])
 def login_dev():
     data = request.get_json()
-    if data.get("usuario") == DEV_USER and data.get("clave") == DEV_PASS:
+    if data.get("usuario"] == DEV_USER and data.get("clave") == DEV_PASS:
         session["is_dev"] = True
         session["historial"] = []
         return jsonify({"success": True})
@@ -90,101 +90,107 @@ def consultar():
     historial = session.get("historial", [])
     query_url = consulta.replace(" ", "+")
     
-    palabras_clave_validas = [
-        "sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley",
-        "comprar", "precio", "donde", "barato", "carne", "cafe", "supermercado", "feria", "alimento", "gas",
-        "transporte", "bondi", "bus", "pasaje", "viaje", "boleto", "nafta", "combustible", "auto",
-        "tramite", "banco", "brou", "bps", "mtss", "comercio", "ahorro", "gasto", "mercado", "negocio",
-        "clinica", "salud", "medico", "abogado", "contrato", "dolar", "cambio", "cotizacion"
-    ]
+    # Análisis inteligente por intención global (idea o frase)
+    texto = consulta
 
-    es_valida = any(palabra in consulta for palabra in palabras_clave_validas)
-    if not es_valida and len(historial) > 0 and any(p in consulta for p in ["cuanto", "donde", "cual", "como", "y ", "ese", "esta", "ahi"]):
-        es_valida = True
-
-    if not es_valida:
+    # 1. TRÁMITES, DOCUMENTOS, IDENTIDAD E INMIGRACIÓN
+    if any(p in texto for p in ["residencia", "inmigrante", "extranjero", "migraciones", "papeles", "cedula", "cédula", "documento", "pasaporte", "visa", "radicacion", "legalizar", "certificado", "antecedentes", "venir de afuera", "llegar al pais"]):
         cuerpo_respuesta = (
-            "Solo hablo de cosas para ahorrar dinero, compras, trabajo, salud y trámites sencillos. "
-            "Cuéntame qué problema tienes para ayudarte con palabras muy fáciles."
+            "Para hacer tu residencia legal y tener tus papeles al día paso a paso:\n\n"
+            "1. Junta tu pasaporte o documento de identidad y el certificado de antecedentes penales legalizado.\n"
+            "2. Entra a la web oficial de Dirección Nacional de Migraciones para iniciar tu trámite sin intermediarios.\n"
+            "3. Presenta todo para obtener tu residencia y la constancia que te permite sacar la cédula provisoria."
         )
-        botones = []
+        botones = [
+            {"texto": "Ir a Migraciones Uruguay", "url": "https://www.gub.uy/ministerio-interior/institucion/direccion-nacional-migraciones"},
+            {"texto": "Oficinas de Migraciones en el mapa", "url": f"https://www.google.com/maps/search/direccion+nacional+de+migraciones+montevideo/@{lat or -34.9011},{lon or -56.1645},14z"}
+        ]
+
+    # 2. TRABAJO, SUELDOS, SALARIOS Y DERECHOS LABORALES
+    elif any(p in texto for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley", "patron", "jefe", "empleo", "recibo", "horas", "aguinaldo", "licencia", "renuncia", "plata"]):
+        cuerpo_respuesta = (
+            "Para cobrar lo justo y defender tus derechos de trabajo:\n\n"
+            "1. Revisa bien los números de tu recibo de sueldo en papel o en el celular.\n"
+            "2. Si te pagaron de menos, habla tranquilo con el encargado o la empresa.\n"
+            "3. Si no te quieren pagar lo que corresponde, ve al Ministerio de Trabajo a pedir ayuda gratis."
+        )
+        botones = [
+            {"texto": "Consultar BPS", "url": "https://www.bps.gub.uy/"},
+            {"texto": "Ir al Ministerio de Trabajo", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"}
+        ]
+
+    # 3. COMPRAS, ALIMENTOS, SUPERMERCADOS Y AHORRO DIARIO
+    elif any(p in texto for p in ["comprar", "precio", "donde", "barato", "carne", "cafe", "supermercado", "feria", "alimento", "gas", "comida", "mercado", "comercio", "gasto", "ahorro", "almacen", "pan", "leche"]):
+        cuerpo_respuesta = (
+            "Para comprar comida y cosas del día gastando menos:\n\n"
+            "1. Compara precios en dos o tres almacenes o ferias de tu barrio antes de cargar el carrito.\n"
+            "2. Busca los comercios barriales que tienen ofertas directas sin marcas caras.\n"
+            "3. Usa los accesos del mapa para ver los negocios más cercanos."
+        )
+        botones = [
+            {"texto": "Ver comercios y ferias cerca", "url": f"https://www.google.com/maps/search/supermercado+feria+almacen/@{lat or -34.9011},{lon or -56.1645},14z"}
+        ]
+
+    # 4. TRANSPORTE, MOVILIDAD Y PASAJES
+    elif any(p in texto for p in ["transporte", "bondi", "bus", "pasaje", "viaje", "boleto", "nafta", "combustible", "auto", "colectivo", "movilidad", "estacion", "terminal", "caminar"]):
+        cuerpo_respuesta = (
+            "Para moverte por la ciudad gastando lo menos posible:\n\n"
+            "1. Usa tarjeta con descuento para el boleto o colectivo si está disponible.\n"
+            "2. Pregunta por las líneas directas para no tomar dos transportes cuando puedes hacer un solo viaje.\n"
+            "3. Revisa las paradas y rutas exactas en el mapa."
+        )
+        botones = [
+            {"texto": "Ver paradas y rutas en mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},13z"}
+        ]
+
+    # 5. SALUD, MÉDICOS, POLICLÍNICAS Y FARMACIAS
+    elif any(p in texto for p in ["clinica", "salud", "medico", "policlinica", "hospital", "doctor", "farmacia", "remedio", "enfermo", "atencion", "urgencia", "emergencia", "sanidad"]):
+        cuerpo_respuesta = (
+            "Para recibir atención médica rápida y cuidar tu salud sin gastar de más:\n\n"
+            "1. Acércate a la policlínica barrial o al hospital público más cercano de tu zona.\n"
+            "2. Pide tu número temprano en la mañana para asegurar atención sin pagar consultas caras.\n"
+            "3. Consulta si tus medicamentos están en el listado bonificado."
+        )
+        botones = [
+            {"texto": "Ver policlínicas y hospitales cerca", "url": f"https://www.google.com/maps/search/policlinica+hospital+medico/@{lat or -34.9011},{lon or -56.1645},14z"}
+        ]
+
+    # 6. DINERO, BANCOS, DÓLARES Y CAMBIO
+    elif any(p in texto for p in ["dolar", "dólar", "cambio", "cotizacion", "banco", "brou", "plata", "efectivo", "moneda", "pesos", "cajero", "prestamo", "tarjeta"]):
+        cuerpo_respuesta = (
+            "Para manejar tu dinero, pesos o dólares de forma segura:\n\n"
+            "1. Consulta la pizarra oficial del Banco República (BROU) para evitar comisiones ocultas.\n"
+            "2. Compara el valor en casas de cambio autorizadas antes de entregar tu efectivo.\n"
+            "3. Ubica los cajeros automáticos o sucursales más seguras en el mapa."
+        )
+        botones = [
+            {"texto": "Ver cotización en BROU", "url": "https://www.brou.com.uy/cotizaciones"},
+            {"texto": "Ver cajeros y bancos cerca", "url": f"https://www.google.com/maps/search/banco+cajero+automatico/@{lat or -34.9011},{lon or -56.1645},14z"}
+        ]
+
+    # 7. PROBLEMAS LEGALES, PAPELES Y JUZGADOS
+    elif any(p in texto for p in ["abogado", "contrato", "incumplimiento", "demanda", "juzgado", "juez", "reclamo", "multa", "alquiler", "desalojo", "firma", "acuerdo"]):
+        cuerpo_respuesta = (
+            "Para resolver problemas legales o de contratos sin gastar una fortuna:\n\n"
+            "1. No pagues abogados caros antes de intentar un acuerdo directo.\n"
+            "2. Acude al Juzgado de Paz de tu zona para mediación gratuita.\n"
+            "3. Guarda todos tus recibos, contratos y mensajes escritos."
+        )
+        botones = [
+            {"texto": "Ver juzgados de paz cerca", "url": f"https://www.google.com/maps/search/juzgado+de+paz/@{lat or -34.9011},{lon or -56.1645},14z"}
+        ]
+
+    # RESPUESTA GENERAL INTELIGENTE (Cubre cualquier otra idea de trámite o solución)
     else:
-        if any(p in consulta for p in ["sueldo", "salario", "cobro", "pago", "aguinaldo", "descuento", "deuda", "trabajo", "despido", "ley"]):
-            cuerpo_respuesta = (
-                "Para cobrar lo justo y que no te falte plata:\n\n"
-                "1. Mira bien tu recibo de sueldo en un papel o en el celular.\n"
-                "2. Si te pagaron menos, anda a hablar tranquilo con el jefe o el que paga.\n"
-                "3. Si no te quieren dar tu plata, ve al Ministerio de Trabajo a pedir ayuda gratis."
-            )
-            botones = [
-                {"texto": "Ir al BPS", "url": "https://www.bps.gub.uy/"},
-                {"texto": "Ir al Ministerio de Trabajo", "url": "https://www.gub.uy/ministerio-trabajo-seguridad-social"}
-            ]
-
-        elif any(p in consulta for p in ["abogado", "contrato", "incumplimiento", "demanda"]):
-            cuerpo_respuesta = (
-                "Para solucionar un problema con papeles o plata sin gastar de más:\n\n"
-                "1. No gastes en abogados caros de entrada.\n"
-                "2. Ve al Juzgado de Paz de tu barrio y pide hablar con alguien para solucionar el problema hablando.\n"
-                "3. Guarda siempre tus papeles y boletas."
-            )
-            botones = [
-                {"texto": "Ver juzgados cerca", "url": f"https://www.google.com/maps/search/juzgado+de+paz/@{lat or -34.9011},{lon or -56.1645},14z"}
-            ]
-
-        elif any(p in consulta for p in ["clinica", "salud", "medico", "policlinica", "hospital"]):
-            cuerpo_respuesta = (
-                "Para verte con un doctor sin gastar mucho:\n\n"
-                "1. Ve a la policlínica de tu barrio o al hospital público más cercano.\n"
-                "2. Pide turno temprano para que te atiendan sin pagar consulta cara.\n"
-                "3. Lleva tu cédula."
-            )
-            botones = [
-                {"texto": "Ver policlínicas cerca", "url": f"https://www.google.com/maps/search/policlinica+medico/@{lat or -34.9011},{lon or -56.1645},14z"}
-            ]
-
-        elif any(p in consulta for p in ["carne", "asado", "carniceria", "san gregorio", "polanco"]):
-            cuerpo_respuesta = (
-                "Para comprar comida barata:\n\n"
-                "• Ve al Autoservicio La Cadena en la calle General Artigas para buscar ofertas.\n"
-                "• Mira también en Cutti Congelados si buscas pollo o carne a mejor precio.\n"
-                "• Compara en dos almacenes antes de comprar."
-            )
-            botones = [
-                {"texto": "Ver comercios en el mapa", "url": f"https://www.google.com/maps/search/carnicerias+en+San+Gregorio+de+Polanco/@{lat or -32.6517},{lon or -55.5861},14z"}
-            ]
-
-        elif any(p in consulta for p in ["dolar", "dólar", "cambio", "cotizacion"]):
-            cuerpo_respuesta = (
-                "Para cambiar tus pesos o dólares de forma segura:\n\n"
-                "• Ve al Banco República (BROU) que es seguro y no cobra de más.\n"
-                "• Mira bien el número en la pantalla antes de entregar tu plata."
-            )
-            botones = [
-                {"texto": "Ver valor del dólar en BROU", "url": "https://www.brou.com.uy/cotizaciones"},
-                {"texto": "Ver casas de cambio cerca", "url": f"https://www.google.com/maps/search/casas+de+cambio/@{lat or -34.9011},{lon or -56.1645},14z"}
-            ]
-
-        elif any(p in consulta for p in ["transporte", "bondi", "bus", "pasaje", "viaje", "boleto", "nafta", "combustible", "auto"]):
-            cuerpo_respuesta = (
-                "Para moverte gastando menos:\n\n"
-                "1. Usa la tarjeta de boleto si tiene descuento.\n"
-                "2. Pregunta cuál es el colectivo o bondi directo para no dar vueltas de más."
-            )
-            botones = [
-                {"texto": "Ver paradas y rutas", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},13z"}
-            ]
-
-        else:
-            cuerpo_respuesta = (
-                "Para resolver esto fácil y rápido:\n\n"
-                "1. No pagues de más ni hables con intermediarios.\n"
-                "2. Ve directo al lugar que te solucione el problema.\n"
-                "3. Toca el botón de abajo para buscar el sitio exacto en el mapa."
-            )
-            botones = [
-                {"texto": "Buscar en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
-            ]
+        cuerpo_respuesta = (
+            "Para resolver esta gestión de forma directa y económica:\n\n"
+            "1. Evita intermediarios que te cobren de más y busca la oficina o canal oficial.\n"
+            "2. Compara opciones y organiza tus papeles antes de hacer el trámite.\n"
+            "3. Toca el botón de abajo para buscar el lugar exacto en el mapa."
+        )
+        botones = [
+            {"texto": "Buscar solución en el mapa", "url": f"https://www.google.com/maps/search/{query_url}/@{lat or -34.9011},{lon or -56.1645},14z"}
+        ]
 
     firma_app = f"BolsilloUruguay - {URL_BASE_OFICIAL}\n\n"
     respuesta = firma_app + cuerpo_respuesta
